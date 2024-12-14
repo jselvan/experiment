@@ -1,9 +1,9 @@
 from collections.abc import Sequence
-from experiment.experiments.events import Event
+from experiment.events import Event
 from experiment.experiments.adapters.BaseAdapter import BaseAdapter
 
 class TimeCounter(BaseAdapter):
-    def __init__(self, children: Sequence[BaseAdapter], duration: float):
+    def __init__(self, duration: float, children: Sequence[BaseAdapter]=[]):
         super().__init__(children)
         #TODO: add on complete callback?
         self.duration = duration

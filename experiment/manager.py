@@ -1,7 +1,11 @@
-import yaml
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 import os
+
+import yaml
+
 from experiment.renderers.base import Renderer
+from experiment.taskmanager import TaskManager
+from experiment.events import EventManager, Event
 
 class ConfigManager: 
     def __init__(self, config: Mapping):
@@ -11,17 +15,28 @@ class ConfigManager:
         with open(yamlfile, 'r') as f:
             config=yaml.safe_load(f)
         return cls(config)
-class TaskManager: pass
-class EventManager: pass
-class IOInterface: pass
+
+class DataStore:
+    pass
+
+class IOInterface:
+    def good_monkey(self, **kwargs):
+        pass
+
 class Identifier:
     def identify(self, manager) -> str | None:
         pass
+
 class RemoteServer: pass
+
 class CameraManager: pass
-class Logger: pass
+
+class Logger: 
+    def log_event(self, event, event_data):
+        print(event, event_data)
 
 class Manager:
+    frame_duration = 1/60
     def __init__(self,
                  config: ConfigManager,
                  taskmanager: TaskManager,
@@ -50,4 +65,8 @@ class Manager:
         identity = self.identifier.identify(self)
         return identity
 
-
+    def good_monkey(self, **kwargs) -> None:
+        """Reward the subject"""
+        if self.iointerface is None:
+            raise ValueError("Cannot reward monkey if io interface is not provided")
+        self.iointerface.good_monkey(**kwargs)

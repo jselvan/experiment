@@ -1,11 +1,15 @@
 from collections.abc import Mapping, Sequence
 import os
+from pathlib import Path
+from datetime import datetime
 
 import yaml
 
 from experiment.renderers.base import Renderer
 from experiment.taskmanager import TaskManager
 from experiment.events import EventManager, Event
+from experiment.datastore.base import DataStore
+from experiment.datastore.jsonstore import JSONDataStore
 
 class ConfigManager: 
     def __init__(self, config: Mapping):
@@ -15,9 +19,6 @@ class ConfigManager:
         with open(yamlfile, 'r') as f:
             config=yaml.safe_load(f)
         return cls(config)
-
-class DataStore:
-    pass
 
 class IOInterface:
     def good_monkey(self, **kwargs):
@@ -38,10 +39,12 @@ class Logger:
 class Manager:
     frame_duration = 1/60
     def __init__(self,
+                 data_directory: os.PathLike,
                  config: ConfigManager,
                  taskmanager: TaskManager,
                  renderer: Renderer,
                  eventmanager: EventManager,
+                 datastore: DataStore | None = None,
                  iointerface: IOInterface | None = None,
                  cameramanager: CameraManager | None = None,
                  identifier: Identifier | None = None,
@@ -57,6 +60,11 @@ class Manager:
         self.cameramanager = cameramanager
         self.remoteserver = remoteserver
         self.logger = logger
+        self.session_directory = Path(data_directory, datetime.strftime(datetime.now(), "%Y%m%d_%H%M%S"))
+        if not self.session_directory.exists():
+            self.session_directory.mkdir(parents=True)
+        if datastore is None:
+            self.datastore = JSONDataStore(self.session_directory)
     
     def identify(self) -> str | None:
         """Identify the subject"""
@@ -70,3 +78,18 @@ class Manager:
         if self.iointerface is None:
             raise ValueError("Cannot reward monkey if io interface is not provided")
         self.iointerface.good_monkey(**kwargs)
+    
+    def run_trial(self, trial):
+        """Run a trial"""
+        continue_experiment = trial.run(self)
+        self.datastore.flush()
+        self.datastore.trialid += 1
+        return continue_experiment
+
+    def record(self, **kwargs):
+        """Record data"""
+        self.datastore.record(**kwargs)
+    
+    def cleanup(self):
+        """Cleanup the experiment"""
+        self.datastore.close()

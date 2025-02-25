@@ -1,15 +1,24 @@
-from collections.abc import Sequence
+from typing import Optional, Sequence
 import time
+from experiment.manager import Manager
 from experiment.experiments.adapters.BaseAdapter import BaseAdapter
 
 class Scene:
-    def __init__(self, manager: "Manager", adapter: BaseAdapter, event: int | None, aux_adapters: Sequence[BaseAdapter] | None):
+    def __init__(self, 
+            manager: Manager, 
+            adapter: BaseAdapter, 
+            event: Optional[int] = None, 
+            aux_adapters: Optional[Sequence[BaseAdapter]] = None,
+            background: Optional[str | Sequence[int]] = None
+        ):
         self.manager = manager
         self.adapter = adapter
         self.event = event
+        self.background = background
         if aux_adapters is None:
             aux_adapters = []
         self.aux_adapters = aux_adapters
+        self.quit = False
     def run(self):
         #fire off the event at the start of the scene
         if self.event is not None:
@@ -18,11 +27,18 @@ class Scene:
         for adapter in [self.adapter] + self.aux_adapters:
             adapter.start()
         frame_end_time = time.time()
+        self.manager.renderer.set_background(self.background)
         while True:
             frame_start_time = time.time()
             tick = frame_start_time - frame_end_time
+            self.manager.renderer.clear()
             # get events from the event manager
             events = self.manager.eventmanager.get_events()
+            for event in events:
+                if event.get('do') == "quit":
+                    self.quit = True
+                    self.manager.logger.log_event("Quit", {"scene": str(self)})
+                    break
 
             # update the main adapter
             self.adapter.update(tick, events)
@@ -59,3 +75,4 @@ class Scene:
         # reset the adapters in the chain
         for adapter in [self.adapter] + self.aux_adapters:
             adapter.reset()
+        self.manager.renderer.set_background()

@@ -1,37 +1,15 @@
+from pathlib import Path
 from typing import Optional, Literal
+from os import PathLike
 from collections.abc import Sequence, Mapping
+
+from numpy.typing import ArrayLike
+import numpy as np
+from PIL import Image
 
 from experiment.renderers.base import Renderer
 from experiment.experiments.adapters.BaseAdapter import BaseAdapter
-
-named_colours = {
-    'BLACK': [0,0,0],
-    'WHITE': [255,255,255]
-}
-
-def parse_colour_hex(colour: str):
-    colour = colour.strip('#')
-    if not len(colour)==6:
-        raise ValueError("Provided colour hex is invalid: #{colour}")
-    rgb = colour[:2], colour[2:4], colour[4:]
-    return [int(value, base=16) for value in rgb]
-
-def parse_colour(colour: str | Sequence[int]):
-    if isinstance(colour, str):
-        if colour.startswith('#'):
-            return parse_colour_hex(colour)
-        elif colour in named_colours:
-            return named_colours[colour]
-        else:
-            raise ValueError(f"Provided colour is an invalid string: {colour}")
-    else:
-        # colour must be a sequence otherwise, 
-        # ensure values are between 0 and 255
-        # and are integers
-        if all((isinstance(value, int) and 0 <= value <= 255) for value in colour):
-            return colour
-        else:
-            raise ValueError(f"Provided colour is an invalid sequence: {colour}")
+from experiment.util.colours import parse_colour
 
 T_BBOX_SPEC = Mapping[Literal['width','height'], float]
 class BBox:
@@ -113,10 +91,44 @@ class RandomDotMotionAdapter(GraphicAdapter):
     def render(self, renderer: Renderer):
         renderer.draw_rdm(self)
 
+cache = {}
+cache_limit = 100
+
+def load_and_cache_image(image: PathLike[bytes]) -> Image.Image:
+    if image in cache:
+        return cache[image]
+    img = Image.open(image)
+    if len(cache) > cache_limit:
+        cache.popitem()
+    cache[image] = img
+    return img
+
 
 class ImageAdapter(GraphicAdapter):
-    def __init__(self, position, image):
-        pass 
+    def __init__(self, 
+        image,
+        position: Sequence[float], 
+        size: Sequence[float],
+        orientation: float=0,
+        bbox: Optional[T_BBOX_SPEC]=None
+    ):
+        colour = 'WHITE'
+        super().__init__(position, size, colour, orientation, bbox)
+        if not isinstance(image, Image.Image):
+            image_path = Path(image)
+            image = load_and_cache_image(image_path)
+        
+        self.image: Image.Image = image
+        self.position = position
+        self.size = size
+        self.orientation = orientation
+    @property
+    def top_left(self):
+        x, y = self.position
+        w, h = self.size
+        return int(x - w//2), int(y - h//2)
+    def render(self, renderer: Renderer):
+        renderer.draw_image(self)
 
 class VideoAdapter(ImageAdapter):
     pass
@@ -142,8 +154,6 @@ class GaborAdapter(ImageAdapter):
         super().__init__(position=position, image=image)
 
     def _compute(self):
-        import numpy as np
-        from PIL import Image
         w, h = self.size
         X0 = (np.linspace(1, w, w)/w)-.5
         Y0 = (np.linspace(1, h, h)/h)-.5

@@ -32,13 +32,20 @@ class BaseAnimationAdapter(BaseAdapter):
     def update(self, tick: float, events: Sequence["Event"]):
         # Update self and propagate updates down the chain
         super().update(tick, events)
-        self.animate(self.get_progress())
         self.child.update(tick, events)
+        self.animate(self.get_progress())
 
     def animate(self, progress: float):
         raise NotImplementedError()
 
-    def get_progress(self):
+    def get_progress(self) -> float:
+        """Determine animation progress scaled by timing function if provided
+
+        Returns
+        -------
+        progress: float
+            value between 0 and 1
+        """
         progress = min(self.elapsed / self.duration, 1.)
         if self.timing_function is not None:
             progress = self.timing_function(progress)

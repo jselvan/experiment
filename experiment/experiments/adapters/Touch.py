@@ -21,6 +21,7 @@ class TouchAdapter(BaseAdapter):
         self.allow_non_target_touch = allow_non_target_touch
         self.allow_outside_touch = allow_outside_touch
         self.event_code_map = event_code_map
+        self.chosen = None
         self.state = 'init'
 
     def update(self, tick: float, events: Sequence["Event"]) -> bool:

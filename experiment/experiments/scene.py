@@ -39,7 +39,6 @@ class Scene:
                     self.quit = True
                     self.manager.logger.log_event("Quit", {"scene": str(self)})
                     break
-
             # update the main adapter
             self.adapter.update(tick, events)
             # if still active, render the adapter chain
@@ -68,7 +67,7 @@ class Scene:
                 #TODO: implement sync/async waiting for next frame?
                 time.sleep(self.manager.frame_duration - elapsed) 
 
-            if not self.adapter.active:
+            if self.quit or not self.adapter.active:
                 break
 
         # if the scene reaches conclusion

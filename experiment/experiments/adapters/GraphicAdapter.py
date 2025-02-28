@@ -119,6 +119,7 @@ class ImageAdapter(GraphicAdapter):
             image = load_and_cache_image(image_path)
         
         self.image: Image.Image = image
+        print(self.image.mode, self.image.size)
         self.position = position
         self.size = size
         self.orientation = orientation
@@ -139,10 +140,11 @@ class GaborAdapter(ImageAdapter):
         size: Sequence[int],
         lambda_: float,
         orientation: float,
-
         sigma: float,
         phase: float,
-        trim: float=.005):
+        trim: float=.005,
+        bbox: Optional[T_BBOX_SPEC]=None,
+        ):
 
         self.size = size
         self.lambda_ = lambda_
@@ -151,7 +153,7 @@ class GaborAdapter(ImageAdapter):
         self.phase = phase
         self.trim = trim
         image = self._compute()
-        super().__init__(position=position, image=image)
+        super().__init__(position=position, image=image, size=size, bbox=bbox)
 
     def _compute(self):
         w, h = self.size
@@ -170,7 +172,7 @@ class GaborAdapter(ImageAdapter):
         gauss = np.exp(-((Xm ** 2) + (Ym ** 2)) / (2 * (self.sigma / size)) ** 2)
         gauss[gauss < self.trim] = 0
         img_data = (grating * gauss + 1) / 2 * 255
-        return Image.fromarray(img_data)
+        return Image.fromarray(img_data).convert('RGBA')
 
 # class MovieAdapter(ImageAdapter, AudioAdapter):
 #     pass

@@ -10,6 +10,7 @@ from experiment.taskmanager import TaskManager
 from experiment.events import EventManager, Event
 from experiment.datastore.base import DataStore
 from experiment.datastore.jsonstore import JSONDataStore
+from experiment.io.base import IOInterface
 
 class ConfigManager: 
     def __init__(self, config: Mapping):
@@ -19,10 +20,6 @@ class ConfigManager:
         with open(yamlfile, 'r') as f:
             config=yaml.safe_load(f)
         return cls(config)
-
-class IOInterface:
-    def good_monkey(self, **kwargs):
-        pass
 
 class Identifier:
     def identify(self, manager) -> str | None:
@@ -34,6 +31,8 @@ class CameraManager: pass
 
 class Logger: 
     def log_event(self, event, event_data):
+        if event=='FrameDelay':
+            return
         print(event, event_data)
 
 class Manager:
@@ -52,6 +51,26 @@ class Manager:
                  logger: Logger | None = None
                 ):
         self.config = config
+        # set up our io devices
+        if iointerface is None:
+            io = config.pop('io', {})
+            io_type = io.get('type', 'base')
+            if io_type == 'base':
+                iointerface = IOInterface()
+        reward_params = io.pop('reward')
+        if reward_params is not None:
+            reward_device_type = reward_params.get('type')
+            if reward_device_type == 'ISMATEC_SERIAL':
+                address = reward_params.get("address")
+                channel_info = reward_params.get('channels')
+                from experiment.io.ismatec import IsmatecPumpSerial
+                reward_device = IsmatecPumpSerial(address)
+                reward_device.init(channel_info)
+
+                iointerface.add_device('reward', reward_device)
+            else:
+                raise ValueError("Unsupported reward device type")
+    
         self.renderer = renderer
         self.eventmanager = eventmanager
         self.iointerface = iointerface

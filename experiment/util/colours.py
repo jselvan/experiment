@@ -1,4 +1,4 @@
-from typing import Sequence
+from typing import Sequence, Literal
 
 named_colours = {
     'BLACK': [0,0,0],
@@ -11,6 +11,7 @@ named_colours = {
     'MAGENTA': [255,0,255],
     'GRAY': [128,128,128],
 }
+TColour = Sequence[int] | str
 
 def parse_colour_hex(colour: str):
     colour = colour.strip('#')

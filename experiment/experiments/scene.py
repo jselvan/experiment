@@ -26,12 +26,13 @@ class Scene:
 
         for adapter in [self.adapter] + self.aux_adapters:
             adapter.start()
-        frame_end_time = time.time()
+        frame_start_time = time.time()
         self.manager.renderer.set_background(self.background)
         while True:
+            last_frame_start_time = frame_start_time
             frame_start_time = time.time()
-            tick = frame_start_time - frame_end_time
-            self.manager.renderer.clear()
+            tick = frame_start_time - last_frame_start_time
+
             # get events from the event manager
             events = self.manager.eventmanager.get_events()
             for event in events:
@@ -39,33 +40,34 @@ class Scene:
                     self.quit = True
                     self.manager.logger.log_event("Quit", {"scene": str(self)})
                     break
-            # update the main adapter
-            self.adapter.update(tick, events)
-            # if still active, render the adapter chain
-            # else kill the scene
-            self.adapter.render(self.manager.renderer)
 
-            # if still active, update and render the active aux adapters
+            # wipe the screen
+            self.manager.renderer.clear()
+            # update and render the main adapter
+            self.adapter.update(tick, events)
+            self.adapter.render(self.manager.renderer)
+            # update and render auxiliary adapters
             active_aux_adapters = [adapter for adapter in self.aux_adapters if adapter.active]
             for adapter in active_aux_adapters:
                 adapter.update(tick, events)
             for adapter in active_aux_adapters:
                 adapter.render(self.manager.renderer)
-
+            # update display
             self.manager.renderer.flip()
-            frame_end_time = time.time()
-            elapsed = frame_end_time - frame_start_time
-            if elapsed > self.manager.frame_duration:
+
+            # manage frame timing
+            render_time = time.time() - frame_start_time
+            if render_time > self.manager.frame_duration:
                 self.manager.logger.log_event(
                     "FrameDelay",
                     {
-                        "elapsed_time": elapsed,
+                        "render_time": render_time,
                         "scene": str(self)
                     }
                 )
             else:
                 #TODO: implement sync/async waiting for next frame?
-                time.sleep(self.manager.frame_duration - elapsed) 
+                time.sleep(self.manager.frame_duration - render_time)
 
             if self.quit or not self.adapter.active:
                 break

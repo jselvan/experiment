@@ -5,15 +5,18 @@ from experiment.experiments.adapters.GraphicAdapter import RectAdapter, CircleAd
 from experiment.util.colours import parse_colour
 
 class PygameRenderer(Renderer):
-    def __init__(self, screen_size, background=None):
-        self.screen_size = screen_size
+    def __init__(self, display_params, background=None):
+        self.display_params = display_params
+        fullscreen = self.display_params.pop('fullscreen', False)
+        if fullscreen:
+            self.display_params['flags'] = pygame.FULLSCREEN
         if background is None:
             background = (155,155,155)
         self.background = self.default_background = parse_colour(background)
 
     def initialize(self):
         pygame.init()
-        self.screen = pygame.display.set_mode(self.screen_size)
+        self.screen = pygame.display.set_mode(**self.display_params)
 
     def draw_rect(self, adapter: RectAdapter):
         return pygame.draw.rect(

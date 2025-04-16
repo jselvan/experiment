@@ -41,11 +41,8 @@ class Scene:
                     break
             # update the main adapter
             self.adapter.update(tick, events)
-            # if still active, render the adapter chain
-            # else kill the scene
             self.adapter.render(self.manager.renderer)
 
-            # if still active, update and render the active aux adapters
             active_aux_adapters = [adapter for adapter in self.aux_adapters if adapter.active]
             for adapter in active_aux_adapters:
                 adapter.update(tick, events)
@@ -65,7 +62,7 @@ class Scene:
                 )
             else:
                 #TODO: implement sync/async waiting for next frame?
-                time.sleep(self.manager.frame_duration - elapsed) 
+                time.sleep(self.manager.frame_duration - elapsed)
 
             if self.quit or not self.adapter.active:
                 break

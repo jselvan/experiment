@@ -5,7 +5,7 @@ class JSONDataStore(DataStore):
     def __init__(self, session_directory):
         self.session_directory = session_directory
         self.json_path = session_directory / "data.json"
-        self.keys = []
+        self.key_is_scalar = {}
         self.records = {}
         self.trialid = 0
     @property
@@ -14,11 +14,17 @@ class JSONDataStore(DataStore):
             self.records[self.trialid] = {"trialid": self.trialid}
         return self.records[self.trialid]
     def record(self, **kwargs):
-        for k in kwargs:
-            if k not in self.keys:
-                self.keys.append(k)
-        self.current_trial_record.update(kwargs)
+        for k, v in kwargs.items():
+            key_state = self.key_is_scalar.get(k)
+            if key_state is None:
+                self.current_trial_record[k] = v
+                self.key_is_scalar[k] = True
+            elif key_state:
+                self.current_trial_record[k] = [self.current_trial_record[k], v]
+            else:
+                self.current_trial_record[k].append(v)
     def flush(self):
+        self.key_is_scalar = {}
         if not self.json_path.exists():
             with open(self.json_path, 'w') as f:
                 f.write("[")

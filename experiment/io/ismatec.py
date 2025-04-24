@@ -25,8 +25,7 @@ class IsmatecPumpSerial:
             self.set_direction(channel_number, clockwise)
             self.set_speed(channel_number, speed)
     def sendmsg(self, msg):
-        msg = msg + '\r\n' 
-        print(msg)
+        msg = msg + '\r\n'
         self.serial.write(msg.encode('utf-8'))
     def start_pump(self, channel):
         self.sendmsg(channel + 'H')

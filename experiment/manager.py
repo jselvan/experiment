@@ -57,7 +57,7 @@ class Manager:
             io_type = io.get('type', 'base')
             if io_type == 'base':
                 iointerface = IOInterface()
-        reward_params = io.pop('reward')
+        reward_params = io.pop('reward', None)
         if reward_params is not None:
             reward_device_type = reward_params.get('type')
             if reward_device_type == 'ISMATEC_SERIAL':

@@ -1,21 +1,19 @@
-from collections.abc import Sequence, Mapping
-from experiment.experiments.adapters.BaseAdapter import BaseAdapter
-from experiment.experiments.adapters.GraphicAdapter import GraphicAdapter
-from experiment.experiments.adapters.TimeCounter import TimeCounter
+from typing import Sequence, Mapping
+from experiment.experiments.adapters import BaseAdapter, GraphicAdapter, TimeCounter
 from experiment.events import Event
 
 class TouchAdapter(BaseAdapter):
     def __init__(self, 
-        time_counter: TimeCounter, 
+        time_counter: TimeCounter | float | int | None, 
         items: Mapping[str, GraphicAdapter], 
         targets: Sequence[str] | None = None, 
         event_code_map: Mapping[str, int] | None = None,
         allow_outside_touch: bool = False, 
         allow_non_target_touch: bool = False
     ):
-        children = [time_counter] + list(items.values())
+        self.time_counter = TimeCounter.new(time_counter)
+        children = [self.time_counter] + list(items.values())
         super().__init__(children=children)
-        self.time_counter = time_counter
         self.items = items
         self.targets = targets
         self.allow_non_target_touch = allow_non_target_touch

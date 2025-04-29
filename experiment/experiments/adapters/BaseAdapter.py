@@ -1,8 +1,10 @@
-from collections.abc import Sequence
+from typing import Sequence, Optional
 
 class BaseAdapter:
-    def __init__(self, children: Sequence["BaseAdapter"]):
+    def __init__(self, children: Optional[Sequence["BaseAdapter"]] = None):
         self.active: bool = False
+        if children is None:
+            children = []
         self.children = children
         self.elapsed = 0.
         self.lifetimes = []

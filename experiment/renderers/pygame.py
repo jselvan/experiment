@@ -1,7 +1,7 @@
 import pygame
 from typing import Optional, Sequence
 from experiment.renderers.base import Renderer
-from experiment.experiments.adapters.GraphicAdapter import RectAdapter, CircleAdapter, ImageAdapter
+from experiment.experiments.adapters.graphic import *
 from experiment.util.colours import parse_colour
 
 class PygameRenderer(Renderer):

@@ -40,6 +40,10 @@ class Scene:
                     self.quit = True
                     self.manager.logger.log_event("Quit", {"scene": str(self)})
                     break
+                elif event.get('do') == "reward":
+                    self.manager.good_monkey(
+                        duration=event.get('reward_duration', self.manager.variables['default_reward_duration'])
+                    )
 
             # wipe the screen
             self.manager.renderer.clear()

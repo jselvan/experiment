@@ -4,7 +4,8 @@ from pathlib import Path
 from datetime import datetime
 
 import yaml
-
+import warnings
+warnings.simplefilter("always")
 from experiment.renderers.base import Renderer
 from experiment.taskmanager import TaskManager
 from experiment.events import EventManager, Event
@@ -33,10 +34,13 @@ class Logger:
     def log_event(self, event, event_data):
         if event=='FrameDelay':
             return
-        print(event, event_data)
+        # print(event, event_data)
 
 class Manager:
     frame_duration = 1/60
+    DEFAULT_VARIABLES = {
+        'default_reward_duration': 0.5,
+    }
     def __init__(self,
                  data_directory: os.PathLike,
                  config: ConfigManager,
@@ -51,6 +55,9 @@ class Manager:
                  logger: Logger | None = None
                 ):
         self.config = config
+        self.strict_mode = config.get('strict_mode', False)
+        self.variables = self.DEFAULT_VARIABLES.copy()
+        self.variables.update(config.get('variables', {}))
         # set up our io devices
         if iointerface is None:
             io = config.pop('io', {})
@@ -94,8 +101,16 @@ class Manager:
 
     def good_monkey(self, **kwargs) -> None:
         """Reward the subject"""
-        if self.iointerface is None:
-            raise ValueError("Cannot reward monkey if io interface is not provided")
+        if (
+            self.iointerface is None 
+            or self.iointerface.devices.get('reward') is None):
+            if self.strict_mode:
+                raise ValueError("Cannot reward monkey if reward device is not provided")
+            else:
+                warnings.warn(
+                    f"No reward device: Tried to reward monkey with params {kwargs}"
+                )
+                return
         self.iointerface.good_monkey(**kwargs)
     
     def run_trial(self, trial):

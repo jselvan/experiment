@@ -47,6 +47,9 @@ class PygameEventManager(EventManager):
                 if pg_event.key == pygame.K_RETURN:
                     event.update(type="key_down", key="enter")
                     event_stack.append(event)
+                if pg_event.key == pygame.K_r:
+                    event.update(type="key_down", key="r", do="reward")
+                    event_stack.append(event)
             else:
                 continue
         for event in event_stack:

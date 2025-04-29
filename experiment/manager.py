@@ -6,6 +6,8 @@ from datetime import datetime
 import yaml
 import warnings
 warnings.simplefilter("always")
+import time
+
 from experiment.renderers.base import Renderer
 from experiment.taskmanager import TaskManager
 from experiment.events import EventManager, Event
@@ -78,6 +80,11 @@ class Manager:
             else:
                 raise ValueError("Unsupported reward device type")
     
+        if remoteserver is None and config.get('remote', False):
+            from experiment.remote.flask import FlaskServer
+            remoteserver = FlaskServer(self)
+            remoteserver.start()
+
         self.renderer = renderer
         self.eventmanager = eventmanager
         self.iointerface = iointerface
@@ -127,3 +134,9 @@ class Manager:
     def cleanup(self):
         """Cleanup the experiment"""
         self.datastore.close()
+        if self.remoteserver is not None:
+            self.remoteserver.stop()
+    
+    def get_time(self) -> float:
+        """Get the current time"""
+        return time.time()

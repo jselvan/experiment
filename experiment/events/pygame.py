@@ -3,10 +3,8 @@ import pygame
 from experiment.events import EventManager, Event
 
 class PygameEventManager(EventManager):
-    def post_event(self, event: Event):
-        raise NotImplementedError()
     def get_events(self) -> Sequence[Event]:
-        event_stack = []
+        event_stack = super().get_events()
         for pg_event in pygame.event.get():
             event = {}
             event['time'] = pg_event.dict.get('timestamp', pygame.time.get_ticks())
@@ -17,7 +15,6 @@ class PygameEventManager(EventManager):
                     x=mouseX,
                     y=mouseY,
                 )
-                event_stack.append(event)
             elif pg_event.type == pygame.MOUSEBUTTONUP:
                 mouseX, mouseY = pygame.mouse.get_pos()
                 event.update(
@@ -25,7 +22,6 @@ class PygameEventManager(EventManager):
                     x=mouseX,
                     y=mouseY,
                 )
-                event_stack.append(event)
             elif pg_event.type == pygame.MOUSEMOTION:
                 mouseX, mouseY = pygame.mouse.get_pos()
                 event.update(x=mouseX, y=mouseY)
@@ -33,25 +29,22 @@ class PygameEventManager(EventManager):
                     event['type'] = 'mouse_drag'
                 else:
                     event['type'] = 'mouse_move'
-                event_stack.append(event)
             elif pg_event.type == pygame.QUIT:
                 event.update(type="QUIT", do="quit")
-                event_stack.append(event)
             elif pg_event.type == pygame.KEYDOWN:
                 if pg_event.key == pygame.K_ESCAPE:
                     event.update(type="key_down", key="escape", do="quit")
-                    event_stack.append(event)
-                if pg_event.key == pygame.K_SPACE:
+                elif pg_event.key == pygame.K_SPACE:
                     event.update(type="key_down", key="space")
-                    event_stack.append(event)
-                if pg_event.key == pygame.K_RETURN:
+                elif pg_event.key == pygame.K_RETURN:
                     event.update(type="key_down", key="enter")
-                    event_stack.append(event)
-                if pg_event.key == pygame.K_r:
+                elif pg_event.key == pygame.K_r:
                     event.update(type="key_down", key="r", do="reward")
-                    event_stack.append(event)
+                else:
+                    event.update(type="key_down", key=pg_event.key)
             else:
                 continue
+            event_stack.append(event)
         for event in event_stack:
             self.manager.logger.log_event('event', event)
         return event_stack

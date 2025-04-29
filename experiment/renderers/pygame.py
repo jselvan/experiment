@@ -4,8 +4,11 @@ from experiment.renderers.base import Renderer
 from experiment.experiments.adapters.graphic import *
 from experiment.util.colours import parse_colour
 
+import threading
+
 class PygameRenderer(Renderer):
     def __init__(self, display_params, background=None):
+        self._frame_ready = threading.Condition()
         self.display_params = display_params
         fullscreen = self.display_params.pop('fullscreen', False)
         if fullscreen:
@@ -57,3 +60,15 @@ class PygameRenderer(Renderer):
     def flip(self):
         pygame.display.flip()
 
+        # Notify any waiting thread that a new frame is ready
+        with self._frame_ready:
+            self._last_frame = pygame.surfarray.pixels3d(self.screen).copy()
+            self._frame_ready.notify_all()
+
+    def get_subject_screen(self):
+        # Return last flipped frame, not the current in-progress buffer
+        with self._frame_ready:
+            if self._last_frame is not None:
+                return self._last_frame.copy()
+            else:
+                return pygame.surfarray.pixels3d(self.screen).copy()

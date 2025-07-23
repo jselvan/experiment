@@ -44,6 +44,12 @@ class Scene:
                     self.manager.good_monkey(
                         duration=event.get('reward_duration', self.manager.variables['default_reward_duration'])
                     )
+                elif event.get('do') == "reward_pulses":
+                    self.manager.good_monkey(
+                        duration=event.get('reward_duration', self.manager.variables['default_reward_duration']),
+                        n_pulses=event.get('key'),
+                        interpulse_interval=.2
+                    )
 
             # wipe the screen
             self.manager.renderer.clear()

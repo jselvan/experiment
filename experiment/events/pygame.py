@@ -8,6 +8,9 @@ class PygameEventManager(EventManager):
         for pg_event in pygame.event.get():
             event = {}
             event['time'] = pg_event.dict.get('timestamp', pygame.time.get_ticks())
+            numbers = [
+                pygame.K_1, pygame.K_3, pygame.K_5
+            ] 
             if pg_event.type == pygame.MOUSEBUTTONDOWN:
                 mouseX, mouseY = pygame.mouse.get_pos()
                 event.update(
@@ -40,6 +43,14 @@ class PygameEventManager(EventManager):
                     event.update(type="key_down", key="enter")
                 elif pg_event.key == pygame.K_r:
                     event.update(type="key_down", key="r", do="reward")
+                elif pg_event.key in numbers:
+                    if pg_event.key == pygame.K_1:
+                        key = 1
+                    elif pg_event.key == pygame.K_3:
+                        key = 3
+                    else:
+                        key = 5
+                    event.update(type="key_down", key=key, do="reward_pulses")
                 else:
                     event.update(type="key_down", key=pg_event.key)
             else:

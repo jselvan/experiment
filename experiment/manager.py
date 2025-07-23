@@ -4,6 +4,7 @@ from pathlib import Path
 from datetime import datetime
 
 import yaml
+import json
 import warnings
 warnings.simplefilter("always")
 import time
@@ -33,10 +34,21 @@ class RemoteServer: pass
 class CameraManager: pass
 
 class Logger: 
+    def __init__(self):
+        self.streams = []
+    def register_stream_handler(self, stream):
+        self.streams.append(stream)
     def log_event(self, event, event_data):
-        if event=='FrameDelay':
-            return
-        # print(event, event_data)
+        for stream in self.streams:
+            if event == 'FrameDelay':
+                continue
+            with open(stream, 'a') as f:
+                f.write(json.dumps(event_data))
+                f.write('\n')
+    def close(self):
+        for stream in self.streams:
+            # stream.close()
+            pass
 
 class Manager:
     frame_duration = 1/60
@@ -98,6 +110,12 @@ class Manager:
             self.session_directory.mkdir(parents=True)
         if datastore is None:
             self.datastore = JSONDataStore(self.session_directory)
+        else:
+            self.datastore = datastore
+            datastore.session_directory = self.session_directory
+        self.logger.register_stream_handler(
+            self.session_directory/'manager.log'
+        )
     
     def identify(self) -> str | None:
         """Identify the subject"""
@@ -134,6 +152,7 @@ class Manager:
     def cleanup(self):
         """Cleanup the experiment"""
         self.datastore.close()
+        self.logger.close()
         if self.remoteserver is not None:
             self.remoteserver.stop()
     

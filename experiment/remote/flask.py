@@ -1,4 +1,4 @@
-from flask import Flask, request, stream_with_context
+from flask import Flask, request, stream_with_context, jsonify
 from flask_socketio import SocketIO
 from flask import render_template, Response
 
@@ -11,14 +11,16 @@ from experiment.manager import Manager
 from experiment.remote.base import RemoteServer
 
 class FlaskServer(RemoteServer):
-    def __init__(self, manager: Manager):
+    def __init__(self, manager: Manager, show=True):
         self.app = Flask(__name__)
         self.socketio = SocketIO(self.app, cors_allowed_origins="*")
         self.manager = manager
         self.app.route('/')(self.index)
         self.app.route('/screen')(self.screen)
+        self.app.route('/behaviour_summary')(self.behaviour_summary)
 
         self.socketio.on_event('command', self.handle_command)
+        self.show = show
 
     def handle_command(self, data):
         command = data.get('action')
@@ -50,6 +52,12 @@ class FlaskServer(RemoteServer):
                 yield (b'--frame\r\n'
                     b'Content-Type: image/jpeg\r\n\r\n' + jpeg.tobytes() + b'\r\n')
 
+    def behaviour_summary(self):
+        if self.manager.datastore is not None:
+            return jsonify(self.manager.datastore.get_summary())
+        else:
+            return jsonify({})
+
     def screen(self):
         return Response(stream_with_context(self.generate_stream()),
                         mimetype='multipart/x-mixed-replace; boundary=frame')
@@ -63,6 +71,9 @@ class FlaskServer(RemoteServer):
     def start(self):
         self.flask_thread = threading.Thread(target=self.run, daemon=True)
         self.flask_thread.start()
+        if self.show:
+            import webbrowser
+            webbrowser.open('http://127.0.0.1:5000', new=2)
         # self.socketio.run(self.app, host='0.0.0.0', port=5000, debug=True)
 
     def stop(self):

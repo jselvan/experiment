@@ -3,7 +3,7 @@ from experiment.renderers.pygame import PygameRenderer
 from experiment.events.pygame import PygameEventManager
 
 class PygameManager(Manager):
-    def __init__(self, data_directory, config):
+    def __init__(self, data_directory, config, **kwargs):
         display_params = config.pop('display')
         background = config.pop('background', None)
         super().__init__(
@@ -12,13 +12,14 @@ class PygameManager(Manager):
             logger=Logger(),
             eventmanager=PygameEventManager(self),
             config=config,
-            taskmanager=None
+            taskmanager=None,
+            **kwargs
         )
         self.renderer.initialize()
 
 if __name__ == '__main__':
     from experiment.experiments.adapters.TimeCounter import TimeCounter
-    from experiment.experiments.adapters.GraphicAdapter import RectAdapter, CircleAdapter, ImageAdapter
+    from experiment.experiments.adapters.graphic import RectAdapter, CircleAdapter, ImageAdapter
     from experiment.experiments.adapters.Touch import TouchAdapter
     from experiment.experiments.scene import Scene
 

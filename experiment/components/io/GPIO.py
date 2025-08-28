@@ -1,10 +1,11 @@
 import time
 
 import RPi.GPIO as GPIO
-from experiment.io.base import IOInterface
+from experiment.components.io.base import IOInterface
 
 class RPi_IOInterface(IOInterface):
     def __init__(self):
+        super().__init__()
         GPIO.setmode(GPIO.BOARD)
         GPIO.setwarnings(False)
 

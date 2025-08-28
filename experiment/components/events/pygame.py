@@ -1,9 +1,10 @@
-from collections.abc import Sequence
+from typing import List
 import pygame
-from experiment.events import EventManager, Event
+from experiment.components.events import EventManager, Event
+from experiment.components import MessageType
 
 class PygameEventManager(EventManager):
-    def get_events(self) -> Sequence[Event]:
+    def get_events(self) -> List[Event]:
         event_stack = super().get_events()
         for pg_event in pygame.event.get():
             event = {}
@@ -55,7 +56,7 @@ class PygameEventManager(EventManager):
                     event.update(type="key_down", key=pg_event.key)
             else:
                 continue
-            event_stack.append(event)
+            event_stack.append(Event(type=event.pop('type'), data=event))
         for event in event_stack:
-            self.manager.logger.log_event('event', event)
+            self.notify(MessageType.EVENT, event)
         return event_stack

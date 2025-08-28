@@ -1,7 +1,11 @@
+from experiment.components import BaseComponent
+
 import time
 
-class IOInterface:
+class IOInterface(BaseComponent):
+    COMPONENT_TYPE = "io_interface"
     def __init__(self):
+        super().__init__()
         self.devices = {}
         self.reward_params = {}
     def add_device(self, name, device):

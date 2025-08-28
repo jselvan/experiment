@@ -1,16 +1,18 @@
 import pygame
 from typing import Optional, Sequence
-from experiment.renderers.base import Renderer
+from experiment.components.renderers import Renderer
 from experiment.experiments.adapters.graphic import *
 from experiment.util.colours import parse_colour
 
 import threading
 
 class PygameRenderer(Renderer):
-    def __init__(self, display_params, background=None):
+    def __init__(self, display_params):
+        super().__init__()
         self._frame_ready = threading.Condition()
         self.display_params = display_params
         fullscreen = self.display_params.pop('fullscreen', False)
+        background = self.display_params.pop('background', None)
         if fullscreen:
             self.display_params['flags'] = pygame.FULLSCREEN
         if background is None:

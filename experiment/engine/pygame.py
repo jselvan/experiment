@@ -5,12 +5,14 @@ from experiment.events.pygame import PygameEventManager
 class PygameManager(Manager):
     def __init__(self, data_directory, config, **kwargs):
         display_params = config.pop('display')
+        background = config.pop('background', None)
         super().__init__(
             data_directory=data_directory,
-            taskmanager=None,
-            renderer=PygameRenderer(display_params),
+            renderer=PygameRenderer(display_params, background),
             logger=Logger(),
             eventmanager=PygameEventManager(self),
+            config=config,
+            taskmanager=None,
             **kwargs
         )
         self.renderer.initialize()

@@ -10,8 +10,8 @@ class IsmatecPumpSerial:
             bytesize=8,
             stopbits=1,
             timeout=None,
-            xonxoff=False,
-            rtscts=False
+            xonxoff=0,
+            rtscts=0
         )
         self.channels = []
     def init(self, channel_info):
@@ -48,7 +48,7 @@ if __name__ == '__main__':
     import time
     addr = sys.argv[1]
     pump = IsmatecPumpSerial(addr)
-    pump.init([{'channel': '1', 'clockwise': True, 'speed': 100}])
+    pump.init()
     pump.start_pump('1')
     time.sleep(1)
     pump.stop_pump('1')

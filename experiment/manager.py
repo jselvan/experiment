@@ -92,9 +92,13 @@ class Manager:
             else:
                 raise ValueError("Unsupported reward device type")
     
-        if remoteserver is None and config.get('remote', False):
+        remote_settings = config.get('remote_server', {})
+        remote_enabled = remote_settings.get('enabled', False) or config.get('remote', False)
+        if remoteserver is None and remote_enabled:
             from experiment.remote.flask import FlaskServer
-            remoteserver = FlaskServer(self)
+            print("Starting remote server...")
+            print(f"Remote server settings: {remote_settings}")
+            remoteserver = FlaskServer(self, show=remote_settings.get('show', True), template_path=remote_settings.get('template_path', None))
             remoteserver.start()
 
         self.renderer = renderer
@@ -143,6 +147,8 @@ class Manager:
         continue_experiment = trial.run(self)
         self.datastore.flush()
         self.datastore.trialid += 1
+        if self.remoteserver is not None:
+            self.remoteserver.notify_trial_end()
         return continue_experiment
 
     def record(self, **kwargs):

@@ -29,15 +29,14 @@ class RewardAdapter(BaseAdapter):
             position = (progress_topleft[0], progress_topleft[1] + pulse * offset)
             self.timecounters.append(
                 TimeCounter(duration, 
-                    on_start=self.reward_on_callback, 
-                    on_complete=self.reward_off_callback, 
+                    on_enter=self.reward_on_callback, 
+                    on_exit=self.reward_off_callback, 
                     children=[ProgressBarAdapter(
                         position=position,
                         size=progress_size,
                         colour=progress_color,
                         duration=duration
-                    )],
-                    name=f"Reward Pulse {pulse+1}"
+                    )]
                 )
             )
             if interpulse_interval is not None and pulse < n_pulses - 1:

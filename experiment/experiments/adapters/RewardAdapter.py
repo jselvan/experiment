@@ -1,4 +1,4 @@
-from experiment.experiments.adapters.base import BaseAdapter
+from experiment.experiments.adapters.BaseAdapter import BaseAdapter
 from experiment.experiments.adapters.TimeCounter import TimeCounter
 from experiment.experiments.adapters.ProgressBarAdapter import ProgressBarAdapter
 from experiment.renderers.base import Renderer

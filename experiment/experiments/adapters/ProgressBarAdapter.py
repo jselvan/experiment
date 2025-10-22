@@ -9,6 +9,12 @@ class ProgressBarAdapter(RectAdapter):
         self.duration = kwargs.pop('duration')
         super().__init__(**kwargs)
         self.original_size = self.size
+        self.rect = (
+            self.position[0],
+            self.position[1],
+            self.size[0],
+            self.size[1],
+        )
 
     def start(self):
         super().start()

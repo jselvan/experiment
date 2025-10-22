@@ -135,12 +135,21 @@ class Manager:
             or self.iointerface.devices.get('reward') is None):
             if self.strict_mode:
                 raise ValueError("Cannot reward monkey if reward device is not provided")
+            elif kwargs.get('return_callbacks', False):
+                warnings.warn(
+                    f"No reward device: Tried to reward monkey with params {kwargs}"
+                )
+                return {
+                    'reward_setup_callback': lambda: print("No reward device setup"),
+                    'reward_on_callback': lambda: print("No reward device on"),
+                    'reward_off_callback': lambda: print("No reward device off"),
+                }
             else:
                 warnings.warn(
                     f"No reward device: Tried to reward monkey with params {kwargs}"
                 )
                 return
-        self.iointerface.good_monkey(**kwargs)
+        return self.iointerface.good_monkey(**kwargs)
     
     def run_trial(self, trial):
         """Run a trial"""

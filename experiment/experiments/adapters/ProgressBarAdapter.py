@@ -22,8 +22,8 @@ class ProgressBarAdapter(RectAdapter):
 
         self.size = (self.original_size[0] * (1 - progress), self.original_size[1])
         self.rect = (
-            self.position[0] - self.size[0] / 2,
-            self.position[1] - self.size[1] / 2,
+            self.position[0],
+            self.position[1],
             self.size[0],
             self.size[1],
         )

@@ -1,3 +1,4 @@
+from experiment.manager import Manager
 from experiment.experiments.adapters.BaseAdapter import BaseAdapter
 from experiment.experiments.adapters.TimeCounter import TimeCounter
 from experiment.experiments.adapters.ProgressBarAdapter import ProgressBarAdapter
@@ -17,11 +18,16 @@ class RewardAdapter(BaseAdapter):
         self.reward_on_callback = kwargs.pop('reward_on_callback', lambda: None)
         self.reward_off_callback = kwargs.pop('reward_off_callback', lambda: None)
 
+        if interpulse_interval is None:
+            interpulse_interval = duration
+
         progress_params = kwargs.get('progress_params', {})
-        progress_topleft = progress_params.get('position', (100, 100))
+        progress_center = progress_params.get('position', (100, 100))
         progress_size = progress_params.get('size', (200, 30))
-        progress_color = progress_params.get('color', (0, 255, 0))
+        progress_colour = progress_params.get('colour', (0, 255, 0))
         progress_gap = progress_params.get('gap', 10)
+        total_height = n_pulses * progress_size[1] + (n_pulses - 1) * progress_gap
+        progress_topleft = progress_center[0] - progress_size[0] // 2, progress_center[1] - total_height // 2
         offset = progress_size[1] + progress_gap
 
         self.timecounters = []
@@ -34,15 +40,31 @@ class RewardAdapter(BaseAdapter):
                     children=[ProgressBarAdapter(
                         position=position,
                         size=progress_size,
-                        colour=progress_color,
+                        colour=progress_colour,
                         duration=duration
                     )]
                 )
             )
-            if interpulse_interval is not None and pulse < n_pulses - 1:
+            if pulse < n_pulses - 1:
                 self.timecounters.append(
                     TimeCounter(interpulse_interval)
                 )
+    
+    @classmethod
+    def from_manager(cls, manager: "Manager", duration, n_pulses, interpulse_interval, **kwargs) -> "RewardAdapter":
+        speed = kwargs.pop('speed', None)
+        channels = kwargs.pop('channels', None)
+        reward_callbacks = manager.iointerface.get_reward_callbacks(speed=speed, channels=channels)
+        return cls(
+            duration=duration,
+            n_pulses=n_pulses,
+            interpulse_interval=interpulse_interval,
+            reward_setup_callback=reward_callbacks['reward_setup_callback'],
+            reward_on_callback=reward_callbacks['reward_on_callback'],
+            reward_off_callback=reward_callbacks['reward_off_callback'],
+            **kwargs
+        )
+
 
     def start(self):
         super().start()

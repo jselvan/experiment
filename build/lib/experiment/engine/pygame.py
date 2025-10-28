@@ -1,6 +1,6 @@
 from experiment.manager import Manager, Logger
 from experiment.renderers.pygame import PygameRenderer
-from experiment.events.pygame import PygameEventManager
+from experiment.components.events.pygame import PygameEventManager
 
 class PygameManager(Manager):
     def __init__(self, data_directory, config):

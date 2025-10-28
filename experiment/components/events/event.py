@@ -1,5 +1,7 @@
+from typing import Optional, Dict
+
 class Event:
-    def __init__(self, type=None, data=None):
+    def __init__(self, type=None, data: Optional[Dict]=None):
         self.type = type
         self.data = data if data is not None else {}
 

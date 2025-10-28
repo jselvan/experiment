@@ -1,9 +1,9 @@
 from typing import List
 from experiment.components.events import Event
-from experiment.components import BaseComponent
+from experiment.components.components import BaseComponent
 
 class EventManager(BaseComponent):
-    COMPONENT_TYPE = "event_manager"
+    COMPONENT_TYPE = "eventmanager"
     def __init__(self):
         super().__init__()
         self.event_queue = []

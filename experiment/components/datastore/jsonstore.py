@@ -4,12 +4,15 @@ from experiment.components.datastore import DataStore
 
 
 class JSONDataStore(DataStore):
-    def __init__(self, session_directory, summary_function=None):
+    def __init__(self, summary_function=None):
         super().__init__(summary_function=summary_function)
-        self.session_directory = Path(session_directory)
+
     @property
     def json_path(self):
-        return self.session_directory / "data.json"
+        if self.manager is None:
+            raise ValueError("Manager is not set for this component")
+        session_directory = self.manager.get_session_directory()
+        return session_directory / "data.json"
     def get_summary(self):
         return self.summary
     def flush(self):

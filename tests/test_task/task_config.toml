@@ -1,0 +1,10 @@
+[timings]
+iti = 2
+
+[defaults]
+method='incremental'
+
+[conditions]
+a={x=100,y=200,s=50}
+b={x=150,y=250,s=75}
+c={x=200,y=300,s=100}

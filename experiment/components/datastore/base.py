@@ -1,4 +1,4 @@
-from experiment.components import BaseComponent
+from experiment.components.components import BaseComponent
 
 def default_summary_function(self):
     n_trials = len(self.records)

@@ -1,7 +1,10 @@
-from experiment.manager import Manager
+from typing import Any, TYPE_CHECKING
+
 from experiment.components.messages import MessageType
 
-from typing import Any, Optional
+if TYPE_CHECKING:
+    from experiment.manager import Manager
+
 
 class BaseComponent:
     COMPONENT_TYPE = "base"
@@ -11,7 +14,7 @@ class BaseComponent:
         self.manager = None
         self.message_handlers = {}
 
-    def register(self, mgr: Manager):
+    def register(self, mgr: "Manager"):
         self.manager = mgr
         self.manager.register_component(self)
 
@@ -19,7 +22,10 @@ class BaseComponent:
         if self.manager:
             self.manager.notify(message_type, message, announcer=self)
 
-    def listen(self, message_type: MessageType, message: Any, announcer: "BaseComponent | Manager"):
+    def listen(self, message_type: MessageType, message: Any, announcer: 'object'):
         handler = self.message_handlers.get(message_type)
         if handler is not None:
             handler(message, announcer)
+    
+    def initialize(self):
+        pass

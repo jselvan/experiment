@@ -1,0 +1,46 @@
+[variables]
+strict_mode = true
+
+[[components]]
+type = "renderer"
+module = "experiment.components.renderer.pygame"
+class = "PygameRenderer"
+
+[components.display_params]
+size = [800, 600]
+fullscreen = true
+display = 1
+
+[[components]]
+type = "eventmanager"
+module = "experiment.components.events.pygame"
+class = "PygameEventManager"
+
+[[components]]
+type = "io_interface"
+module = "experiment.components.io.base"
+class = "IOInterface"
+
+[[components]]
+type = "datastore"
+module = "experiment.components.datastore.jsonstore"
+class = "JSONDataStore"
+
+[[components]]
+type = "remoteserver"
+module = "experiment.components.remote.flask"
+class = "FlaskServer"
+show = true
+
+[[components]]
+type = "logger"
+module = "experiment.components.logger.base"
+class = "BaseLogger"
+
+# [[components.devices]]
+# name = "reward"
+# type = "ISMATEC"
+# module = "experiment.components.io.ismatec"
+# class = "IsmatecPumpSerial"
+# address = "COM9"
+# baudrate = 9600

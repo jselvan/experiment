@@ -1,2 +1,1 @@
-from experiment.components.components import BaseComponent
 from experiment.components.messages import MessageType

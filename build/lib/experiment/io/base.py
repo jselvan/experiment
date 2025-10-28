@@ -1,19 +1,8 @@
-from experiment.components import BaseComponent
-
 import time
 
-class IOInterface(BaseComponent):
-    COMPONENT_TYPE = "io_interface"
-    def __init__(self, devices=None):
-        super().__init__()
-
-        devices = devices if devices is not None else {}
+class IOInterface:
+    def __init__(self):
         self.devices = {}
-        for name, device in devices.items():
-            if isinstance(device, dict):
-                device = initialize_device_from_config(device)
-            self.add_device(name, device)
-
         self.reward_params = {}
     def add_device(self, name, device):
         self.devices[name] = device

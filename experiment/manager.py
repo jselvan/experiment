@@ -13,6 +13,7 @@ from experiment.taskmanager import TaskManager
 from experiment.components.events import EventManager, Event
 from experiment.components.datastore import DataStore
 from experiment.components.io import IOInterface
+from experiment.components.from_config import initialize_component_from_config
 
 from typing import TYPE_CHECKING, Any, Optional, List, Dict
 if TYPE_CHECKING:

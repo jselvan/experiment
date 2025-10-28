@@ -1,6 +1,18 @@
 from pathlib import Path
 import time
 
+def get_git_version(path):
+    import git
+    repo = git.Repo(path, search_parent_directories=True)
+    sha = repo.head.object.hexsha
+    if repo.is_dirty():
+        sha += "-dirty"
+    if repo.remotes:
+        url = git.Repo('.').remote().url
+    else:
+        url = git.Repo('.').head.abspath
+    return sha, url
+
 def load_trial(module_path, class_name):
     import importlib.util
     spec = importlib.util.spec_from_file_location("trial_module", module_path)
@@ -60,8 +72,7 @@ def run_with_task_config(mgr, task_config, task_directory):
             condition=condition, 
             trial_in_block=current_block_info['trial_in_block']
         )
-        if default_timings is not None:
-            trial_info.setdefault('timings', default_timings)
+        trial_info.setdefault('timings', default_timings)
 
         trial_class_info = trial_info.get('trial_class', default_trial)
         trial_class = load_trial(
@@ -74,15 +85,20 @@ def run_with_task_config(mgr, task_config, task_directory):
 
         # update for next trial
         trialid += 1
-        block_number += 1
-        if block_number >= current_block_info['length']:
-            block_idx += 1
-            if block_idx >= len(blocks):
-                break
-            current_block_info = blocks[block_idx]
-            block_number = 0
-        condition = current_block_info['conditions'][block_number % len(current_block_info['conditions'])]
-
+        current_block_info['trial_in_block'] += 1
+        if current_block_info['trial_in_block'] >= current_block_info['length']:
+            block_idx = (block_idx + 1) % len(blocks)
+            block_number += 1
+            current_block_info = get_block(blocks, block_idx)
+        trial_method = current_block_info.get('method', 'incremental')
+        if trial_method == 'random':
+            import random
+            condition = random.choice(current_block_info['conditions'])
+        elif trial_method == 'incremental':
+            condition_idx = current_block_info['trial_in_block'] % len(current_block_info['conditions'])
+            condition = current_block_info['conditions'][condition_idx]
+        else:
+            raise ValueError(f"Unknown trial selection method: {trial_method}")
 
 def run(task_directory, system_config=None):
     task_directory = Path(task_directory).expanduser()
@@ -122,6 +138,7 @@ def run(task_directory, system_config=None):
     trial_selector_file = task_directory / "trial_selector.py"
     trial_selector_function_name = "select_trial"
     if trial_selector_file.exists():
+        #TODO: relegate this logic to the config file explicitly
         import importlib.util
         spec = importlib.util.spec_from_file_location("trial_selector_module", trial_selector_file)
         if spec is None or spec.loader is None:

@@ -1,7 +1,8 @@
 import serial
+from typing import List, Dict, Any
 
 class IsmatecPumpSerial:
-    def __init__(self, address, baudrate=9600):
+    def __init__(self, address: str, baudrate: int = 9600):
         self.address = address
         self.baudrate = baudrate
         self.serial = serial.Serial(
@@ -10,11 +11,11 @@ class IsmatecPumpSerial:
             bytesize=8,
             stopbits=1,
             timeout=None,
-            xonxoff=0,
-            rtscts=0
+            xonxoff=False,
+            rtscts=False
         )
         self.channels = []
-    def init(self, channel_info):
+    def init(self, channel_info: List[Dict[str, Any]]):
         self.sendmsg('1~1') # set channel addressing mode on startup
         for channel in channel_info:
             channel_number = channel['channel']
@@ -24,23 +25,23 @@ class IsmatecPumpSerial:
             self.set_rpm_mode(channel_number)
             self.set_direction(channel_number, clockwise)
             self.set_speed(channel_number, speed)
-    def sendmsg(self, msg):
+    def sendmsg(self, msg: str):
         msg = msg + '\r\n'
         self.serial.write(msg.encode('utf-8'))
-    def start_pump(self, channel):
+    def start_pump(self, channel: str):
         self.sendmsg(channel + 'H')
-    def stop_pump(self, channel):
+    def stop_pump(self, channel: str):
         self.sendmsg(channel + 'I')
-    def set_speed(self, channel, speed):
+    def set_speed(self, channel: str, speed: float):
         msg = f"{channel}S0{speed:3.1f}".replace('.','')
         self.sendmsg(msg)
-    def set_direction(self, channel, clockwise=True):
+    def set_direction(self, channel: str, clockwise: bool = True):
         direction = 'L'
         if not clockwise:
             raise NotImplementedError(":( look it up idk")
         msg = f"{channel}{direction}"
         self.sendmsg(msg)
-    def set_rpm_mode(self, channel):
+    def set_rpm_mode(self, channel: str):
         self.sendmsg(f"{channel}xRJ")
 
 if __name__ == '__main__':
@@ -48,7 +49,7 @@ if __name__ == '__main__':
     import time
     addr = sys.argv[1]
     pump = IsmatecPumpSerial(addr)
-    pump.init()
+    pump.init([{'channel': '1', 'clockwise': True, 'speed': 50}])
     pump.start_pump('1')
     time.sleep(1)
     pump.stop_pump('1')

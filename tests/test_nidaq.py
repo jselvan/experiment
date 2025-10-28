@@ -2,7 +2,7 @@
 import unittest
 from unittest.mock import MagicMock
 import sys
-# sys.modules['nidaqmx'] = MagicMock()
+sys.modules['nidaqmx'] = MagicMock()
 
 import time
 import tempfile
@@ -11,7 +11,7 @@ import numpy as np
 
 class TestNIDAQ(unittest.TestCase):
     def setUp(self):
-        from experiment.io.nidaq import AnalogReader
+        from experiment.components.io.nidaq import AnalogReader
         self.root = tempfile.TemporaryDirectory()
         path = Path(self.root.name, 'test_data.bin')
         self.reader = AnalogReader(data_path=path.as_posix(), channels='Dev1/ai0:1', sampling_rate=1000, chunk_size=10)

@@ -37,7 +37,6 @@ class JSONDataStore(DataStore):
             json.dump(self.current_trial_record, f)
             f.write("\n")
     def close(self):
-        with open(self.json_path, 'a') as f:
-            f.write("]")
+        pass
     def link_attachment(self, name, ftype) -> str:
         ... # Implementation for linking attachments

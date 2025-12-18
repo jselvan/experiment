@@ -20,6 +20,10 @@ class PygameRenderer(Renderer):
     def initialize(self):
         pygame.init()
         self.screen = pygame.display.set_mode(**self.display_params)
+    
+    def pause(self):
+        self.screen.fill((0,0,0))
+        self.flip()
 
     def draw_rect(self, adapter: RectAdapter):
         return pygame.draw.rect(

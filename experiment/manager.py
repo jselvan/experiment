@@ -43,6 +43,18 @@ class Logger:
             # stream.close()
             pass
 
+def check_if_valid_time(config: Dict[str, Any], current_time: datetime) -> bool:
+    valid_times = config.get('valid_times', None)
+    if valid_times is None:
+        return True
+    for timerange in valid_times:
+        start = datetime.strptime(timerange.get('start', '00:00'), '%H:%M')
+        end = datetime.strptime(timerange.get('end', '23:59'), '%H:%M')
+        if start.hour <= current_time.hour < end.hour and start.minute <= current_time.minute < end.minute:
+            return True
+    else:
+        return False
+
 class Manager:
     frame_duration = 1/60
     DEFAULT_VARIABLES = {
@@ -159,6 +171,10 @@ class Manager:
     def run_session(self, blockmanager) -> None:
         continue_session = True
         while continue_session:
+            if not check_if_valid_time(self.config, datetime.now()):
+                self.renderer.pause()
+                time.sleep(60)
+                continue
             trial = blockmanager.get_next_trial()
             result = self.run_trial(trial)
             continue_session = result.continue_session

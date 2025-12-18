@@ -1,4 +1,4 @@
-from collections.abc import Mapping, Sequence
+from typing import Mapping, Dict, TYPE_CHECKING, Callable, Any
 import os
 from pathlib import Path
 from datetime import datetime
@@ -16,20 +16,13 @@ from experiment.datastore.base import DataStore
 from experiment.datastore.jsonstore import JSONDataStore
 from experiment.io.base import IOInterface
 
-class ConfigManager: 
-    def __init__(self, config: Mapping):
-        self.config = config
-    @classmethod
-    def from_yaml(cls, yamlfile: os.PathLike):
-        with open(yamlfile, 'r') as f:
-            config=yaml.safe_load(f)
-        return cls(config)
+if TYPE_CHECKING:
+    from experiment.remote.base import RemoteServer
+    from experiment.trial import Trial, TrialResult
 
 class Identifier:
     def identify(self, manager) -> str | None:
         pass
-
-class RemoteServer: pass
 
 class CameraManager: pass
 
@@ -57,7 +50,7 @@ class Manager:
     }
     def __init__(self,
                  data_directory: os.PathLike,
-                 config: ConfigManager,
+                 config: Dict[str, Any],
                  taskmanager: TaskManager,
                  renderer: Renderer,
                  eventmanager: EventManager,
@@ -78,19 +71,22 @@ class Manager:
             io_type = io.get('type', 'base')
             if io_type == 'base':
                 iointerface = IOInterface()
-        reward_params = io.pop('reward', None)
-        if reward_params is not None:
-            reward_device_type = reward_params.get('type')
-            if reward_device_type == 'ISMATEC_SERIAL':
-                address = reward_params.get("address")
-                channel_info = reward_params.get('channels')
-                from experiment.io.ismatec import IsmatecPumpSerial
-                reward_device = IsmatecPumpSerial(address)
-                reward_device.init(channel_info)
-
-                iointerface.add_device('reward', reward_device)
             else:
-                raise ValueError("Unsupported reward device type")
+                raise ValueError("Unsupported IO interface type")
+
+            reward_params = io.pop('reward', None)
+            if reward_params is not None:
+                reward_device_type = reward_params.get('type')
+                if reward_device_type == 'ISMATEC_SERIAL':
+                    address = reward_params.get("address")
+                    channel_info = reward_params.get('channels')
+                    from experiment.io.ismatec import IsmatecPumpSerial
+                    reward_device = IsmatecPumpSerial(address)
+                    reward_device.init(channel_info)
+
+                    iointerface.add_device('reward', reward_device)
+                else:
+                    raise ValueError("Unsupported reward device type")
     
         remote_settings = config.get('remote_server', {})
         remote_enabled = remote_settings.get('enabled', False) or config.get('remote', False)
@@ -98,7 +94,10 @@ class Manager:
             from experiment.remote.flask import FlaskServer
             print("Starting remote server...")
             print(f"Remote server settings: {remote_settings}")
-            remoteserver = FlaskServer(self, show=remote_settings.get('show', True), template_path=remote_settings.get('template_path', None))
+            remoteserver = FlaskServer(self, 
+                show=remote_settings.get('show', True), 
+                template_path=remote_settings.get('template_path', None)
+            )
             remoteserver.start()
 
         self.renderer = renderer
@@ -108,6 +107,8 @@ class Manager:
         self.identifier = identifier
         self.cameramanager = cameramanager
         self.remoteserver = remoteserver
+        if logger is None:
+            logger = Logger()
         self.logger = logger
         self.session_directory = Path(data_directory, datetime.strftime(datetime.now(), "%Y%m%d_%H%M%S"))
         if not self.session_directory.exists():
@@ -128,7 +129,7 @@ class Manager:
         identity = self.identifier.identify(self)
         return identity
 
-    def good_monkey(self, **kwargs) -> None:
+    def good_monkey(self, **kwargs) -> None | Dict[str, Callable]:
         """Reward the subject"""
         if (
             self.iointerface is None 
@@ -151,14 +152,22 @@ class Manager:
                 return
         return self.iointerface.good_monkey(**kwargs)
     
-    def run_trial(self, trial):
+    def run_session(self, blockmanager) -> None:
+        continue_session = True
+        while continue_session:
+            trial = blockmanager.get_next_trial()
+            result = self.run_trial(trial)
+            continue_session = result.continue_session
+            blockmanager.parse_results(result)
+
+    def run_trial(self, trial: Trial) -> TrialResult:
         """Run a trial"""
-        continue_experiment = trial.run(self)
+        result = trial.run(self)
         self.datastore.flush()
         self.datastore.trialid += 1
         if self.remoteserver is not None:
             self.remoteserver.notify_trial_end()
-        return continue_experiment
+        return result
 
     def record(self, **kwargs):
         """Record data"""

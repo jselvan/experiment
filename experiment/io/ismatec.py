@@ -4,6 +4,8 @@ class IsmatecPumpSerial:
     def __init__(self, address):
         self.address = address
         self.baudrate = 9600
+        self.channels = []
+    def init(self, channel_info):
         self.serial = serial.Serial(
             self.address, self.baudrate, 
             parity=serial.PARITY_NONE,
@@ -13,8 +15,6 @@ class IsmatecPumpSerial:
             xonxoff=0,
             rtscts=0
         )
-        self.channels = []
-    def init(self, channel_info):
         self.sendmsg('1~1') # set channel addressing mode on startup
         for channel in channel_info:
             channel_number = channel['channel']
@@ -48,7 +48,7 @@ if __name__ == '__main__':
     import time
     addr = sys.argv[1]
     pump = IsmatecPumpSerial(addr)
-    pump.init()
+    pump.init([{'channel': '1'}])
     pump.start_pump('1')
     time.sleep(1)
     pump.stop_pump('1')

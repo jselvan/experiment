@@ -58,7 +58,7 @@ class Manager:
                  iointerface: IOInterface | None = None,
                  cameramanager: CameraManager | None = None,
                  identifier: Identifier | None = None,
-                 remoteserver: RemoteServer | None = None,
+                 remoteserver: "RemoteServer | None" = None,
                  logger: Logger | None = None
                 ):
         self.config = config
@@ -82,9 +82,15 @@ class Manager:
                     channel_info = reward_params.get('channels')
                     from experiment.io.ismatec import IsmatecPumpSerial
                     reward_device = IsmatecPumpSerial(address)
-                    reward_device.init(channel_info)
-
-                    iointerface.add_device('reward', reward_device)
+                    try:
+                        reward_device.init(channel_info)
+                    except Exception as e:
+                        if self.strict_mode:
+                            raise e
+                        else:
+                            warnings.warn(f"Could not initialize reward device: {e}")
+                    else:
+                        iointerface.add_device('reward', reward_device)
                 else:
                     raise ValueError("Unsupported reward device type")
     
@@ -92,8 +98,6 @@ class Manager:
         remote_enabled = remote_settings.get('enabled', False) or config.get('remote', False)
         if remoteserver is None and remote_enabled:
             from experiment.remote.flask import FlaskServer
-            print("Starting remote server...")
-            print(f"Remote server settings: {remote_settings}")
             remoteserver = FlaskServer(self, 
                 show=remote_settings.get('show', True), 
                 template_path=remote_settings.get('template_path', None)
@@ -159,8 +163,13 @@ class Manager:
             result = self.run_trial(trial)
             continue_session = result.continue_session
             blockmanager.parse_results(result)
+    
+    def run_session_from_config(self, config: Dict[str, Any]) -> None:
+        from experiment.blockmanager import BlockManager
+        blockmanager = BlockManager.from_config(config)
+        self.run_session(blockmanager)
 
-    def run_trial(self, trial: Trial) -> TrialResult:
+    def run_trial(self, trial: "Trial") -> "TrialResult":
         """Run a trial"""
         result = trial.run(self)
         self.datastore.flush()

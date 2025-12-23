@@ -19,6 +19,7 @@ from experiment.io.base import IOInterface
 if TYPE_CHECKING:
     from experiment.remote.base import RemoteServer
     from experiment.trial import Trial, TrialResult
+    from experiment.experiments.scene import Scene
 
 class Identifier:
     def identify(self, manager) -> str | None:
@@ -55,10 +56,31 @@ def check_if_valid_time(config: Dict[str, Any], current_time: datetime) -> bool:
     else:
         return False
 
+def quit(scene: "Scene", event: Event) -> None:
+    scene.quit = True
+    scene.manager.logger.log_event("Quit", {"scene": str(scene)})
+
+def reward(scene: "Scene", event: Event) -> None:
+    scene.manager.good_monkey(
+        duration=event.get('reward_duration', scene.manager.variables['default_reward_duration'])
+    )
+
+def reward_pulses(scene: "Scene", event: Event) -> None:
+    scene.manager.good_monkey(
+        duration=event.get('reward_duration', scene.manager.variables['default_reward_duration']),
+        n_pulses=event.get('key'),
+        interpulse_interval=.2
+    )
+
 class Manager:
     frame_duration = 1/60
     DEFAULT_VARIABLES = {
         'default_reward_duration': 0.5,
+    }
+    DEFAULT_ACTIONS = {
+        'quit': quit,
+        'reward': reward,
+        'reward_pulses': reward_pulses,
     }
     def __init__(self,
                  data_directory: os.PathLike,
@@ -77,6 +99,13 @@ class Manager:
         self.strict_mode = config.get('strict_mode', False)
         self.variables = self.DEFAULT_VARIABLES.copy()
         self.variables.update(config.get('variables', {}))
+
+        self.action_register: "Dict[str, Callable[[Scene, Event], None]]" = {}
+        for action_name, action_callback in self.DEFAULT_ACTIONS.items():
+            self.register_action(action_name, action_callback)
+        for action_name, action_callback in config.get('actions', {}).items():
+            self.register_action(action_name, action_callback)
+
         # set up our io devices
         if iointerface is None:
             io = config.pop('io', {})
@@ -138,6 +167,10 @@ class Manager:
             self.session_directory/'manager.log'
         )
     
+    def register_action(self, action: str, callback: Callable[[Event], None]) -> None:
+        """Register an action callback"""
+        self.action_register[action] = callback
+
     def identify(self) -> str | None:
         """Identify the subject"""
         if self.identifier is None:

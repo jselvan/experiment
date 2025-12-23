@@ -1,7 +1,7 @@
 var socket = io.connect("http://" + document.domain + ":" + location.port);
 
-function sendCommand(action) {
-    socket.emit('command', { action: action });
+function sendCommand(data) {
+    socket.emit('command', data);
 }
 
 socket.on('response', function(data) {

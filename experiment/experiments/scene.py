@@ -2,6 +2,7 @@ from typing import Optional, Sequence
 import time
 from experiment.manager import Manager
 from experiment.experiments.adapters.BaseAdapter import BaseAdapter
+import warnings
 
 class Scene:
     def __init__(self, 
@@ -36,20 +37,14 @@ class Scene:
             # get events from the event manager
             events = self.manager.eventmanager.get_events()
             for event in events:
-                if event.get('do') == "quit":
-                    self.quit = True
-                    self.manager.logger.log_event("Quit", {"scene": str(self)})
-                    break
-                elif event.get('do') == "reward":
-                    self.manager.good_monkey(
-                        duration=event.get('reward_duration', self.manager.variables['default_reward_duration'])
-                    )
-                elif event.get('do') == "reward_pulses":
-                    self.manager.good_monkey(
-                        duration=event.get('reward_duration', self.manager.variables['default_reward_duration']),
-                        n_pulses=event.get('key'),
-                        interpulse_interval=.2
-                    )
+                action = event.get('do')
+                if action in self.manager.action_register:
+                    self.manager.action_register[action](self, event)
+                else:
+                    if self.manager.strict_mode:
+                        raise ValueError(f"Unregistered action '{action}' called in scene '{self}'")
+                    else:
+                        warnings.warn(f"Unregistered action '{action}' called in scene '{self}'")
 
             # wipe the screen
             self.manager.renderer.clear()

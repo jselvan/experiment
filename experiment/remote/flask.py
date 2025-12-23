@@ -35,18 +35,10 @@ class FlaskServer(RemoteServer):
     def add_manager(self, manager: Manager):
         self.manager = manager
 
-    def handle_command(self, data):
-        command = data.get('action')
-        if command == "goodmonkey":
-            self.manager.eventmanager.post_event({
-                'do': 'reward',
-                'type': 'remote',
-            })
-        elif command == "quit":
-            self.manager.eventmanager.post_event({
-                'do': 'quit',
-                'type': 'remote',
-            })
+    def handle_command(self, action):
+        action['type'] = 'remote'
+        if self.manager is not None and self.manager.eventmanager is not None:
+            self.manager.eventmanager.post_event(action)
 
     def generate_stream(self):
         while True:

@@ -1,12 +1,13 @@
-from typing import Optional, Sequence
+from typing import Optional, Sequence, TYPE_CHECKING
 import time
-from experiment.manager import Manager
 from experiment.experiments.adapters.BaseAdapter import BaseAdapter
 import warnings
+if TYPE_CHECKING:
+    from experiment.manager import Manager
 
 class Scene:
     def __init__(self, 
-            manager: Manager, 
+            manager: "Manager", 
             adapter: BaseAdapter, 
             event: Optional[int] = None, 
             aux_adapters: Optional[Sequence[BaseAdapter]] = None,
@@ -38,6 +39,8 @@ class Scene:
             events = self.manager.eventmanager.get_events()
             for event in events:
                 action = event.get('do')
+                if action is None:
+                    continue
                 if action in self.manager.action_register:
                     self.manager.action_register[action](self, event)
                 else:

@@ -1,4 +1,4 @@
-from typing import Mapping, Dict, TYPE_CHECKING, Callable, Any
+from typing import Dict, TYPE_CHECKING, Callable, Any
 import os
 from pathlib import Path
 from datetime import datetime
@@ -15,6 +15,7 @@ from experiment.events import EventManager, Event
 from experiment.datastore.base import DataStore
 from experiment.datastore.jsonstore import JSONDataStore
 from experiment.io.base import IOInterface
+from experiment.time_management import check_if_valid_time, get_pause_scene
 
 if TYPE_CHECKING:
     from experiment.remote.base import RemoteServer
@@ -44,18 +45,6 @@ class Logger:
             # stream.close()
             pass
 
-def check_if_valid_time(config: Dict[str, Any], current_time: datetime) -> bool:
-    valid_times = config.get('valid_times', None)
-    if valid_times is None:
-        return True
-    for timerange in valid_times:
-        start = datetime.strptime(timerange.get('start', '00:00'), '%H:%M')
-        end = datetime.strptime(timerange.get('end', '23:59'), '%H:%M')
-        if start.hour <= current_time.hour < end.hour and start.minute <= current_time.minute < end.minute:
-            return True
-    else:
-        return False
-
 def quit(scene: "Scene", event: Event) -> None:
     scene.quit = True
     scene.manager.logger.log_event("Quit", {"scene": str(scene)})
@@ -72,6 +61,20 @@ def reward_pulses(scene: "Scene", event: Event) -> None:
         interpulse_interval=.2
     )
 
+def pump_on(scene: "Scene", event: Event) -> None:
+    callbacks = scene.manager.good_monkey(
+        duration=None,
+        return_callbacks=True
+    )
+    callbacks['reward_on_callback']()
+
+def pump_off(scene: "Scene", event: Event) -> None:
+    callbacks = scene.manager.good_monkey(
+        duration=None,
+        return_callbacks=True
+    )
+    callbacks['reward_off_callback']()
+
 class Manager:
     frame_duration = 1/60
     DEFAULT_VARIABLES = {
@@ -81,6 +84,8 @@ class Manager:
         'quit': quit,
         'reward': reward,
         'reward_pulses': reward_pulses,
+        'pump_on': pump_on,
+        'pump_off': pump_off
     }
     def __init__(self,
                  data_directory: os.PathLike,
@@ -203,10 +208,11 @@ class Manager:
     
     def run_session(self, blockmanager) -> None:
         continue_session = True
+        pause_scene = get_pause_scene(self)
         while continue_session:
             if not check_if_valid_time(self.config, datetime.now()):
-                self.renderer.pause()
-                time.sleep(60)
+                pause_scene.run()
+                continue_session = not pause_scene.quit
                 continue
             trial = blockmanager.get_next_trial()
             result = self.run_trial(trial)

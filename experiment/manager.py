@@ -8,6 +8,7 @@ import json
 import warnings
 warnings.simplefilter("always")
 import time
+from collections import ChainMap
 
 from experiment.renderers.base import Renderer
 from experiment.taskmanager import TaskManager
@@ -57,7 +58,7 @@ def reward(scene: "Scene", event: Event) -> None:
 def reward_pulses(scene: "Scene", event: Event) -> None:
     scene.manager.good_monkey(
         duration=event.get('reward_duration', scene.manager.variables['default_reward_duration']),
-        n_pulses=event.get('key'),
+        n_pulses=event.get('n_pulses', 3),
         interpulse_interval=.2
     )
 
@@ -75,6 +76,12 @@ def pump_off(scene: "Scene", event: Event) -> None:
     )
     callbacks['reward_off_callback']()
 
+def pause(scene: "Scene", event: Event) -> None:
+    scene.manager.pause = True
+
+def unpause(scene: "Scene", event: Event) -> None:
+    scene.manager.pause = False
+
 class Manager:
     frame_duration = 1/60
     DEFAULT_VARIABLES = {
@@ -85,7 +92,24 @@ class Manager:
         'reward': reward,
         'reward_pulses': reward_pulses,
         'pump_on': pump_on,
-        'pump_off': pump_off
+        'pump_off': pump_off,
+        'pause': pause,
+        'unpause': unpause
+    }
+    DEFAULT_HOTKEYS = {
+        'escape': {'do': 'quit'},
+        'r': {'do': 'reward'},
+        '[1]': {'do': 'reward_pulses', 'n_pulses': 1},
+        '[3]': {'do': 'reward_pulses', 'n_pulses': 3},
+        '[5]': {'do': 'reward_pulses', 'n_pulses': 5},
+        'i': {'do': 'pump_on'},
+        'o': {'do': 'pump_off'},
+        'p': {'do': 'pause'},
+        'u': {'do': 'unpause'},
+        '[/]': {'do': 'pause'},
+        '[*]': {'do': 'unpause'},
+        '[+]': {'do': 'pump_on'},
+        '[-]': {'do': 'pump_off'},
     }
     def __init__(self,
                  data_directory: os.PathLike,
@@ -110,6 +134,9 @@ class Manager:
             self.register_action(action_name, action_callback)
         for action_name, action_callback in config.get('actions', {}).items():
             self.register_action(action_name, action_callback)
+        
+        self.hotkeys: Dict[str, Dict[str, Any]] = dict(ChainMap(self.DEFAULT_HOTKEYS, config.get('hotkeys', {})))
+        self.pause = False
 
         # set up our io devices
         if iointerface is None:
@@ -213,6 +240,11 @@ class Manager:
             if not check_if_valid_time(self.config, datetime.now()):
                 pause_scene.run()
                 continue_session = not pause_scene.quit
+                continue
+            if self.pause:
+                pause_scene.run()
+                # we unpause if the pause scene is quit
+                self.pause = not pause_scene.quit 
                 continue
             trial = blockmanager.get_next_trial()
             result = self.run_trial(trial)

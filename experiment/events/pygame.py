@@ -35,24 +35,12 @@ class PygameEventManager(EventManager):
             elif pg_event.type == pygame.QUIT:
                 event.update(type="QUIT", do="quit")
             elif pg_event.type == pygame.KEYDOWN:
-                if pg_event.key == pygame.K_ESCAPE:
-                    event.update(type="key_down", key="escape", do="quit")
-                elif pg_event.key == pygame.K_SPACE:
-                    event.update(type="key_down", key="space")
-                elif pg_event.key == pygame.K_RETURN:
-                    event.update(type="key_down", key="enter")
-                elif pg_event.key == pygame.K_r:
-                    event.update(type="key_down", key="r", do="reward")
-                elif pg_event.key in numbers:
-                    if pg_event.key == pygame.K_1:
-                        key = 1
-                    elif pg_event.key == pygame.K_3:
-                        key = 3
-                    else:
-                        key = 5
-                    event.update(type="key_down", key=key, do="reward_pulses")
+                key_name = pygame.key.name(pg_event.key)
+                if key_name in self.manager.hotkeys:
+                    action = self.manager.hotkeys[key_name]
+                    event.update(type="key_down", key=key_name, **action)
                 else:
-                    event.update(type="key_down", key=pg_event.key)
+                    event.update(type="key_down", key=key_name)
             else:
                 continue
             event_stack.append(event)

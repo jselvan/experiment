@@ -126,9 +126,9 @@ class Manager:
                 ):
         self.config = config
         self.strict_mode = config.get('strict_mode', False)
-        self.variables = dict(ChainMap(self.DEFAULT_VARIABLES, config.get('variables', {})))
-        self.action_register: "Dict[str, Callable[[Scene, Event], None]]" = dict(ChainMap(self.DEFAULT_ACTIONS, config.get('actions', {})))
-        self.hotkeys: Dict[str, Dict[str, Any]] = dict(ChainMap(self.DEFAULT_HOTKEYS, config.get('hotkeys', {})))
+        self.variables = dict(ChainMap(config.get('variables', {}), self.DEFAULT_VARIABLES))
+        self.action_register: "Dict[str, Callable[[Scene, Event], None]]" = dict(ChainMap(config.get('actions', {}), self.DEFAULT_ACTIONS))
+        self.hotkeys: Dict[str, Dict[str, Any]] = dict(ChainMap(config.get('hotkeys', {}), self.DEFAULT_HOTKEYS))
         self.pause = False
 
         # set up our io devices
@@ -235,10 +235,12 @@ class Manager:
                 # we unpause if the pause scene is quit
                 self.pause = not pause_scene.quit 
                 continue
-            trial = blockmanager.get_next_trial()
+            trial, condition_name, condition = blockmanager.get_next_trial()
             self.record(
                 block=blockmanager.current_block_index,
-                block_number=blockmanager.current_block_number
+                block_number=blockmanager.current_block_number,
+                condition=condition_name,
+                trial_in_block=blockmanager.trial_in_block,
             )
             result = self.run_trial(trial)
             continue_session = result.continue_session

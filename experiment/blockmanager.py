@@ -80,4 +80,4 @@ class BlockManager:
         if trial_type not in self.trials:
             raise ValueError(f"Unknown trial type {trial_type}")
         trial = self.trials[trial_type].from_config(condition)
-        return trial
+        return trial, condition_name, condition

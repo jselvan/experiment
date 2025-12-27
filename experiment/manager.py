@@ -126,15 +126,8 @@ class Manager:
                 ):
         self.config = config
         self.strict_mode = config.get('strict_mode', False)
-        self.variables = self.DEFAULT_VARIABLES.copy()
-        self.variables.update(config.get('variables', {}))
-
-        self.action_register: "Dict[str, Callable[[Scene, Event], None]]" = {}
-        for action_name, action_callback in self.DEFAULT_ACTIONS.items():
-            self.register_action(action_name, action_callback)
-        for action_name, action_callback in config.get('actions', {}).items():
-            self.register_action(action_name, action_callback)
-        
+        self.variables = dict(ChainMap(self.DEFAULT_VARIABLES, config.get('variables', {})))
+        self.action_register: "Dict[str, Callable[[Scene, Event], None]]" = dict(ChainMap(self.DEFAULT_ACTIONS, config.get('actions', {})))
         self.hotkeys: Dict[str, Dict[str, Any]] = dict(ChainMap(self.DEFAULT_HOTKEYS, config.get('hotkeys', {})))
         self.pause = False
 
@@ -199,10 +192,6 @@ class Manager:
             self.session_directory/'manager.log'
         )
     
-    def register_action(self, action: str, callback: Callable[[Event], None]) -> None:
-        """Register an action callback"""
-        self.action_register[action] = callback
-
     def identify(self) -> str | None:
         """Identify the subject"""
         if self.identifier is None:
@@ -247,6 +236,10 @@ class Manager:
                 self.pause = not pause_scene.quit 
                 continue
             trial = blockmanager.get_next_trial()
+            self.record(
+                block=blockmanager.current_block_index,
+                block_number=blockmanager.current_block_number
+            )
             result = self.run_trial(trial)
             continue_session = result.continue_session
             blockmanager.parse_results(result)

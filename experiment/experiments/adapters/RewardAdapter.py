@@ -1,10 +1,12 @@
-from experiment.manager import Manager
 from experiment.experiments.adapters.BaseAdapter import BaseAdapter
 from experiment.experiments.adapters.TimeCounter import TimeCounter
 from experiment.experiments.adapters.ProgressBarAdapter import ProgressBarAdapter
 from experiment.renderers.base import Renderer
 from experiment.events import Event
-from typing import Sequence
+from typing import Sequence, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from experiment.manager import Manager
 
 class RewardAdapter(BaseAdapter):
     def __init__(self, 

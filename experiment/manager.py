@@ -237,7 +237,7 @@ class Manager:
                 continue
             trial, condition_name, condition = blockmanager.get_next_trial()
             self.record(
-                block=blockmanager.current_block_index,
+                block=blockmanager.current_block_idx,
                 block_number=blockmanager.current_block_number,
                 condition=condition_name,
                 trial_in_block=blockmanager.trial_in_block,

@@ -56,7 +56,7 @@ class RewardAdapter(BaseAdapter):
     def from_manager(cls, manager: "Manager", duration, n_pulses, interpulse_interval, **kwargs) -> "RewardAdapter":
         speed = kwargs.pop('speed', None)
         channels = kwargs.pop('channels', None)
-        reward_callbacks = manager.good_monkey(speed=speed, channels=channels, return_callbacks=True)
+        reward_callbacks = manager.good_monkey(duration=None, speed=speed, channels=channels, return_callbacks=True)
         assert reward_callbacks is not None, "Could not get reward callbacks from manager"
         return cls(
             duration=duration,

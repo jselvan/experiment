@@ -223,6 +223,8 @@ class Manager:
         return self.iointerface.good_monkey(**kwargs)
     
     def run_session(self, blockmanager) -> None:
+        from experiment.experiments.adapters import TimeCounter
+        from experiment.experiments.scene import Scene
         continue_session = True
         pause_scene = get_pause_scene(self)
         while continue_session:
@@ -236,7 +238,11 @@ class Manager:
                 self.pause = not pause_scene.quit 
                 continue
             trial, condition_name, condition = blockmanager.get_next_trial()
+            now = datetime.now()
+            date, time = now.strftime("%Y-%m-%d"), now.strftime("%H:%M:%S.%f")
             self.record(
+                date=date,
+                time=time,
                 block=blockmanager.current_block_idx,
                 block_number=blockmanager.current_block_number,
                 condition=condition_name,
@@ -245,6 +251,13 @@ class Manager:
             result = self.run_trial(trial)
             continue_session = result.continue_session
             blockmanager.parse_results(result)
+
+            #TODO: get ITI from trial result
+            iti = condition.get('ITI', 1)
+            if continue_session and iti > 0:
+                iti_scene = Scene(self, TimeCounter(iti))
+                iti_scene.run()
+                continue_session = not iti_scene.quit
     
     def run_session_from_config(self, config: Dict[str, Any]) -> None:
         from experiment.blockmanager import BlockManager

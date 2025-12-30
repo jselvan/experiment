@@ -18,6 +18,7 @@ class BlockManager:
         self.defaults = config
         self.block_names = list(blocks.keys())
         self.block_list = [blocks[name] for name in self.block_names]
+        self.current_block_outcomes = {}
         self.current_block_number = 0
         self.current_block_idx = 0
         self.trial_in_block = 0
@@ -51,14 +52,31 @@ class BlockManager:
     def parse_results(self, result: "TrialResult"):
         self.n_trials_completed += 1
         outcome = result.outcome
+        self.current_block_outcomes[outcome] = self.current_block_outcomes.get(outcome, 0) + 1
         retry = self.current_block.get('retry', {}).get(outcome, False)
         if not retry:
             self.increment_trial()
 
     def next_block(self):
-        self.current_block_idx = (self.current_block_idx + 1) % len(self.blocks)
+        transitions = self.current_block.get('transition', [])
+        for transition in transitions:
+            condition = transition.get('condition')
+            if condition is None:
+                self.current_block_idx = self.block_names.index(transition['next'])
+                break
+            else:
+                outcome = condition.get('outcome')
+                min_count = condition.get('min', 0)
+                max_count = condition.get('max', float('inf'))
+                outcome_count = self.current_block_outcomes.get(outcome, 0)
+                if min_count <= outcome_count <= max_count:
+                    self.current_block_idx = self.block_names.index(transition['next'])
+                    break
+        else:
+            self.current_block_idx = (self.current_block_idx + 1) % len(self.blocks)
         self.current_block_number += 1
         self.trial_in_block = 0
+        self.current_block_outcomes = {}
     
     def get_next_condition(self):
         method = self.current_block.get('method', self.DEFAULT_METHOD)

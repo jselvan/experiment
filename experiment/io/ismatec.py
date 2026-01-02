@@ -28,9 +28,9 @@ class IsmatecPumpSerial:
         msg = msg + '\r\n'
         self.serial.write(msg.encode('utf-8'))
     def start_pump(self, channel):
-        self.sendmsg(channel + 'H')
+        self.sendmsg(f'{channel}H')
     def stop_pump(self, channel):
-        self.sendmsg(channel + 'I')
+        self.sendmsg(f'{channel}I')
     def set_speed(self, channel, speed):
         msg = f"{channel}S0{speed:3.1f}".replace('.','')
         self.sendmsg(msg)

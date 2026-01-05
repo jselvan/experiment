@@ -1,6 +1,6 @@
 import random
 from collections import ChainMap
-from typing import Dict, Any, TYPE_CHECKING
+from typing import Dict, Any, TYPE_CHECKING, Tuple
 from experiment.util.python_import_helper import load_object_from_module
 
 if TYPE_CHECKING:
@@ -91,7 +91,7 @@ class BlockManager:
         condition = dict(ChainMap(condition, self.current_block, self.defaults))
         return condition_name, condition
 
-    def get_next_trial(self) -> "Trial":
+    def get_next_trial(self) -> Tuple["Trial", str, Dict[str, Any]]:
         condition_name, condition = self.get_next_condition()
         trial_type = condition.get('trial_type', 'default')
         assert isinstance(trial_type, str)

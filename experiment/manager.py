@@ -17,6 +17,7 @@ from experiment.datastore.base import DataStore
 from experiment.datastore.jsonstore import JSONDataStore
 from experiment.io.base import IOInterface
 from experiment.time_management import check_if_valid_time, get_pause_scene
+from experiment.camera.base import CameraManager
 
 if TYPE_CHECKING:
     from experiment.remote.base import RemoteServer
@@ -27,7 +28,6 @@ class Identifier:
     def identify(self, manager) -> str | None:
         pass
 
-class CameraManager: pass
 
 class Logger: 
     def __init__(self):
@@ -168,7 +168,13 @@ class Manager:
                 show=remote_settings.get('show', True), 
                 template_path=remote_settings.get('template_path', None)
             )
-            remoteserver.start()
+        
+        camera_settings = config.get('camera', {})
+        camera_enabled = camera_settings.get('enabled', True)
+        if cameramanager is None and camera_enabled:
+            from experiment.camera.base import CV2CameraManager
+            camera_index = camera_settings.get('device_index', 0)
+            cameramanager = CV2CameraManager(camera_index)
 
         self.renderer = renderer
         self.eventmanager = eventmanager
@@ -191,6 +197,16 @@ class Manager:
         self.logger.register_stream_handler(
             self.session_directory/'manager.log'
         )
+
+        self.initialize()
+    
+    def initialize(self):
+        if self.renderer is not None:
+            self.renderer.initialize()
+        if self.cameramanager is not None:
+            self.cameramanager.start_capturing()
+        if self.remoteserver is not None:
+            self.remoteserver.start()
     
     def identify(self) -> str | None:
         """Identify the subject"""
@@ -258,6 +274,7 @@ class Manager:
                 iti_scene = Scene(self, TimeCounter(iti))
                 iti_scene.run()
                 continue_session = not iti_scene.quit
+        self.cleanup()
     
     def run_session_from_config(self, config: Dict[str, Any]) -> None:
         from experiment.blockmanager import BlockManager
@@ -281,6 +298,8 @@ class Manager:
         """Cleanup the experiment"""
         self.datastore.close()
         self.logger.close()
+        if self.cameramanager is not None:
+            self.cameramanager.close()
         if self.remoteserver is not None:
             self.remoteserver.stop()
     

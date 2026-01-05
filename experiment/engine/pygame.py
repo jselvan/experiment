@@ -15,7 +15,6 @@ class PygameManager(Manager):
             taskmanager=None,
             **kwargs
         )
-        self.renderer.initialize()
 
 if __name__ == '__main__':
     from experiment.experiments.adapters.TimeCounter import TimeCounter

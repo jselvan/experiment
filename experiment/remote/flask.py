@@ -24,6 +24,7 @@ class FlaskServer(RemoteServer):
         self.socketio = SocketIO(self.app, cors_allowed_origins="*")
         self.app.route('/')(self.index)
         self.app.route('/screen')(self.screen)
+        self.app.route('/camera')(self.camera)
         self.app.route('/behaviour_summary')(self.behaviour_summary)
 
         self.socketio.on_event('command', self.handle_command)
@@ -40,7 +41,9 @@ class FlaskServer(RemoteServer):
         if self.manager is not None and self.manager.eventmanager is not None:
             self.manager.eventmanager.post_event(action)
 
-    def generate_stream(self):
+    def generate_screen_stream(self):
+        if self.manager is None or self.manager.renderer is None:
+            return
         while True:
             with self.manager.renderer._frame_ready:
                 self.manager.renderer._frame_ready.wait(timeout=1.0)
@@ -55,15 +58,32 @@ class FlaskServer(RemoteServer):
             if success:
                 yield (b'--frame\r\n'
                     b'Content-Type: image/jpeg\r\n\r\n' + jpeg.tobytes() + b'\r\n')
+    def generate_camera_stream(self):
+        if self.manager is None or self.manager.cameramanager is None:
+            return
+        while True:
+            with self.manager.cameramanager._frame_ready:
+                self.manager.cameramanager._frame_ready.wait(timeout=1.0)
+
+                frame = self.manager.cameramanager._last_frame
+            if frame is None:
+                continue
+            success, jpeg = cv2.imencode('.jpg', frame)
+            if success:
+                yield (b'--frame\r\n'
+                    b'Content-Type: image/jpeg\r\n\r\n' + jpeg.tobytes() + b'\r\n')
 
     def behaviour_summary(self):
-        if self.manager.datastore is not None:
+        if self.manager is not None and self.manager.datastore is not None:
             return jsonify(self.manager.datastore.records)
         else:
             return jsonify({})
 
     def screen(self):
-        return Response(stream_with_context(self.generate_stream()),
+        return Response(stream_with_context(self.generate_screen_stream()),
+                        mimetype='multipart/x-mixed-replace; boundary=frame')
+    def camera(self):
+        return Response(stream_with_context(self.generate_camera_stream()),
                         mimetype='multipart/x-mixed-replace; boundary=frame')
     def index(self):
         return render_template('index.html')

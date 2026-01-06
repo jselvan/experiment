@@ -1,4 +1,4 @@
-from typing import Dict, TYPE_CHECKING, Callable, Any
+from typing import Dict, TYPE_CHECKING, Callable, Any, overload, Literal
 import os
 from pathlib import Path
 from datetime import datetime
@@ -164,9 +164,12 @@ class Manager:
         remote_enabled = remote_settings.get('enabled', False) or config.get('remote', False)
         if remoteserver is None and remote_enabled:
             from experiment.remote.flask import FlaskServer
+            path = remote_settings.get('template_path', None)
+            if path is not None:
+                path = Path(path).absolute().resolve()
             remoteserver = FlaskServer(self, 
                 show=remote_settings.get('show', True), 
-                template_path=remote_settings.get('template_path', None)
+                template_path=path
             )
             remoteserver.start()
 
@@ -199,14 +202,19 @@ class Manager:
         identity = self.identifier.identify(self)
         return identity
 
-    def good_monkey(self, **kwargs) -> None | Dict[str, Callable]:
+    @overload
+    def good_monkey(self, return_callbacks: Literal[True], **kwargs) -> Dict[str, Callable]: ...
+    @overload
+    def good_monkey(self, return_callbacks: Literal[False] = False, **kwargs) -> None: ...
+
+    def good_monkey(self, return_callbacks: bool = False, **kwargs) -> None | Dict[str, Callable]:
         """Reward the subject"""
         if (
             self.iointerface is None 
             or self.iointerface.devices.get('reward') is None):
             if self.strict_mode:
                 raise ValueError("Cannot reward monkey if reward device is not provided")
-            elif kwargs.get('return_callbacks', False):
+            elif return_callbacks:
                 warnings.warn(
                     f"No reward device: Tried to reward monkey with params {kwargs}"
                 )

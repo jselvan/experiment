@@ -13,7 +13,7 @@ default_config = {
         'fullscreen': False,
         'display': 0
     },
-    'remote': {
+    'remote_server': {
         'enabled': True,
         'show': True
     },
@@ -27,10 +27,19 @@ default_config = {
             ]
         }
     },
-    'valid_times': [
-        {'start': '08:00', 'end': '18:00'},
-    ]
 }
+
+
+def recursive_update(d, u):
+    """Recursively update dictionary d with values from u."""
+    for k, v in u.items():
+        # If value in u is a dict and key exists in d and is also a dict, recurse
+        if isinstance(v, dict) and k in d and isinstance(d[k], dict):
+            recursive_update(d[k], v)
+        else:
+            # Otherwise, just set or overwrite the value
+            d[k] = v
+    return d
 
 def load_manager(config: dict) -> Manager:
     engine = config.get('engine', 'pygame')
@@ -41,21 +50,13 @@ def load_manager(config: dict) -> Manager:
     if monkey is not None:
         data_directory = data_directory / monkey
     data_directory.mkdir(parents=True, exist_ok=True)
-    # recursively update default_config with config
-    def recursive_update(d, u):
-        for k, v in u.items():
-            if isinstance(v, dict):
-                d[k] = recursive_update(d.get(k, {}), v)
-            else:
-                d[k] = v
-        return d
     cfg = recursive_update(default_config.copy(), config)
     mgr = PygameManager(data_directory, cfg)
     return mgr
 
 def main(config, **overrides):
     cfg = load_config(config)
-    cfg.update(overrides)
+    cfg = recursive_update(cfg, overrides)
     mgr = load_manager(cfg)
     mgr.run_session_from_config(cfg)
 

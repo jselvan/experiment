@@ -228,7 +228,7 @@ class Manager:
                     f"No reward device: Tried to reward monkey with params {kwargs}"
                 )
                 return
-        return self.iointerface.good_monkey(**kwargs)
+        return self.iointerface.good_monkey(return_callbacks=return_callbacks, **kwargs)
     
     def run_session(self, blockmanager) -> None:
         from experiment.experiments.adapters import TimeCounter

@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Experiment Viewer</title>
+    <style>
+      body { font-family: Arial, sans-serif; margin: 16px; }
+      #frame { max-width: 100%; border: 1px solid #333; }
+      .controls { margin-top: 8px; }
+    </style>
+  </head>
+  <body>
+    <h1>Experiment Viewer</h1>
+    <img id="frame" alt="frame" />
+
+    <div class="controls">
+      <label>Background: <input id="bg" value="#9b9b9b" /></label>
+      <button id="setBg">Set background</button>
+      <button id="reqFrame">Request frame</button>
+      <button id="sendEvent">Send sample event</button>
+    </div>
+
+    <!-- Load Socket.IO client from CDN -->
+    <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
+    <script>
+      const socket = io();
+      const img = document.getElementById('frame');
+
+      let waitingForFrame = false;
+
+      socket.on('connect', () => {
+        console.log('connected');
+        // kick off continuous frame requests
+        requestLoop();
+      });
+
+      socket.on('frame', data => {
+        if (data && data.png_base64) {
+          img.src = 'data:image/png;base64,' + data.png_base64;
+        }
+        // allow the next request
+        waitingForFrame = false;
+      });
+
+      // Send mouse clicks inside the frame as image-coordinate mouse_down events
+      img.addEventListener('mousedown', (ev) => {
+        try {
+          const rect = img.getBoundingClientRect();
+          const cx = ev.clientX - rect.left;
+          const cy = ev.clientY - rect.top;
+          const displayW = rect.width;
+          const displayH = rect.height;
+          // Prefer natural image size if available (original renderer size)
+          const imageW = img.naturalWidth || displayW;
+          const imageH = img.naturalHeight || displayH;
+
+          const x = Math.round(cx * imageW / displayW);
+          const y = Math.round(cy * imageH / displayH);
+
+          socket.emit('event', {
+            type: 'mouse_down',
+            x: x,
+            y: y,
+            button: ev.button,
+            _meta: {
+              clientX: ev.clientX,
+              clientY: ev.clientY,
+              displayWidth: displayW,
+              displayHeight: displayH,
+              imageWidth: imageW,
+              imageHeight: imageH
+            },
+            time: Date.now()
+          });
+        } catch (e) {
+          console.warn('failed to send mouse event', e);
+        }
+      });
+
+      // Continuous request loop using requestAnimationFrame
+      function requestLoop() {
+        if (!socket.connected) return;
+        if (!waitingForFrame) {
+          waitingForFrame = true;
+          socket.emit('request_frame');
+        }
+        // Schedule next tick
+        requestAnimationFrame(requestLoop);
+      }
+
+      document.getElementById('reqFrame').addEventListener('click', () => {
+        // one-off immediate request
+        if (!waitingForFrame) {
+          waitingForFrame = true;
+          socket.emit('request_frame');
+        }
+      });
+
+      document.getElementById('setBg').addEventListener('click', () => {
+        const value = document.getElementById('bg').value;
+        // Try parsing hex to RGB
+        let rgb = value;
+        if (value.startsWith('#')) {
+          const v = value.substring(1);
+          if (v.length === 6) {
+            const r = parseInt(v.substring(0,2),16);
+            const g = parseInt(v.substring(2,4),16);
+            const b = parseInt(v.substring(4,6),16);
+            rgb = [r,g,b];
+          }
+        }
+        socket.emit('set_background', { colour: rgb });
+      });
+
+      document.getElementById('sendEvent').addEventListener('click', () => {
+        socket.emit('event', { type: 'sample', message: 'hello from client', time: Date.now() });
+      });
+    </script>
+  </body>
+ </html>

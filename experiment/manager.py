@@ -1,4 +1,4 @@
-from typing import Dict, TYPE_CHECKING, Callable, Any, overload, Literal
+from typing import Dict, TYPE_CHECKING, Callable, Any, Optional, overload, Literal
 import os
 from pathlib import Path
 from datetime import datetime
@@ -112,18 +112,28 @@ class Manager:
         '[-]': {'do': 'pump_off'},
     }
     def __init__(self,
-                 data_directory: os.PathLike,
-                 config: Dict[str, Any],
-                 taskmanager: TaskManager,
-                 renderer: Renderer,
-                 eventmanager: EventManager,
-                 datastore: DataStore | None = None,
-                 iointerface: IOInterface | None = None,
-                 cameramanager: CameraManager | None = None,
-                 identifier: Identifier | None = None,
-                 remoteserver: "RemoteServer | None" = None,
-                 logger: Logger | None = None
-                ):
+        config: Dict[str, Any],
+        renderer: Optional[Renderer] = None,
+        eventmanager: Optional[EventManager] = None,
+        datastore: DataStore | None = None,
+        iointerface: IOInterface | None = None,
+        cameramanager: CameraManager | None = None,
+        identifier: Identifier | None = None,
+        remoteserver: "RemoteServer | None" = None,
+        logger: Logger | None = None,
+        taskmanager: Optional[TaskManager] = None,
+        data_directory: str | Path = './data'
+        ):
+        if taskmanager is not None:
+            # this will be deprecated
+            warnings.warn("Passing a TaskManager to Manager is deprecated", DeprecationWarning)
+        if data_directory is None:
+            data_directory = config.get('data_directory', './data')
+        data_directory = Path(data_directory)
+        if renderer is None:
+            renderer_params = config.get('renderer', {})
+
+
         self.config = config
         self.strict_mode = config.get('strict_mode', False)
         self.variables = dict(ChainMap(config.get('variables', {}), self.DEFAULT_VARIABLES))
